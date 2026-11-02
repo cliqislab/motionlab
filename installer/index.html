@@ -127,7 +127,7 @@ async function action(method,success){
  finally{running=false;document.querySelectorAll('button').forEach(b=>b.disabled=false);await refresh();show(current);}
 }
 $('back').onclick=()=>show(current-1);
-$('next').onclick=()=>show(current+1);
+$('next').onclick=()=>{ show(current+1); window.scrollTo(0,0); };
 $('refresh').onclick=async()=>{await refresh();message('Verificação atualizada. Veja os itens acima.');};
 $('deps').onclick=()=>{ $('install-progress').hidden=false; $('progress-label').textContent='Iniciando instalação...'; $('progress-pct').textContent='0%'; $('progress-fill').style.width='0%'; action('installDependencies','Dependências essenciais verificadas.'); };
 $('editor').onclick=()=>action('installVSCode','Instalação do VS Code finalizada.');

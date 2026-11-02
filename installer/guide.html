@@ -18,7 +18,7 @@ button{border:0;background:#38cfb8;color:#092621;font-weight:bold;padding:11px;b
 const steps=[
 {title:'Abra o terminal no VS Code',detail:'No menu superior do VS Code, clique em Terminal → Novo Terminal. O terminal deve abrir na pasta MotionLab Kit.',example:'Se não encontrar: menu Terminal → Novo Terminal.'},
 {title:'Inicie o Claude Code',detail:'No terminal, digite o comando abaixo e pressione Enter. Se for sua primeira vez, siga as instruções de login.',example:'claude'},
-{title:'Peça seu primeiro vídeo',detail:'Cole o pedido abaixo na conversa do Claude. Aguarde a renderização e confira a pasta videos do MotionLab.',example:'Crie um vídeo animado vertical de 30 segundos apresentando minha empresa, com cores azul e branco. Exporte em MP4.'}
+{title:'Peça seu primeiro vídeo',detail:'Você decide estilo, narração, formato e referências no pedido. Coloque suas imagens de referência no projeto e diga o nome da pasta ao Claude. Efeitos 3D dependem das ferramentas disponíveis; a chave Gemini é apenas para narração.',example:'Crie um vídeo vertical de 30 segundos para minha empresa, com visual moderno. Use as imagens que eu colocar na pasta referencias como inspiração visual. Se houver chave Gemini configurada, gere narração natural com a voz Fenrir e sincronize com as cenas. Exporte um MP4.'}
 ];
 let step=0;const $=id=>document.getElementById(id);
 function draw(){const s=steps[step];$('title').textContent=s.title;$('detail').textContent=s.detail;$('example').textContent=s.example;$('counter').textContent=(step+1)+' de 3';$('progress').style.width=(100*(step+1)/3)+'%';$('back').disabled=step===0;$('next').textContent=step===2?'Recomeçar':'Próximo passo';}

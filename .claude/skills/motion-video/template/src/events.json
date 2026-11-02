@@ -1,0 +1,27 @@
+{
+  "_doc": "FONTE ÚNICA de tempo. Todos os tempos em SEGUNDOS DA NARRAÇÃO (o vídeo soma vo). Lido pelo vídeo (src/) e pelo scripts/score.py.",
+  "width": 1920,
+  "height": 1080,
+  "vo": 0.4,
+  "duration": 52.0,
+  "accent": "#FF5A1F",
+  "hud": false,
+  "cuts": [2.9, 6.6],
+  "shake": [[1.26, 0.8], [3.48, 0.6]],
+  "glitch": [[3.48, 0.25]],
+  "flash": [[3.48, 0.5]],
+  "music": {
+    "bpm": 128,
+    "drop": 3.48,
+    "lift": null,
+    "silences": [],
+    "braams": [3.48],
+    "final": null
+  },
+  "sfx": [
+    {"t": 0.0, "type": "type", "dur": 0.5},
+    {"t": 1.94, "type": "blip"},
+    {"t": 4.4, "type": "zip"},
+    {"t": 5.0, "type": "ding"}
+  ]
+}

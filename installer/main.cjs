@@ -14,7 +14,7 @@ const source = () => app.isPackaged ? path.join(process.resourcesPath, 'kit') : 
 const executable = name => windows && ['npm', 'claude'].includes(name) ? `${name}.cmd` : name;
 function resolved(name) {
   if (!mac) return executable(name);
-  const candidates = [name, `/opt/homebrew/bin/${name}`, `/usr/local/bin/${name}`];
+  const candidates = [name, `/opt/homebrew/bin/${name}`, `/usr/local/bin/${name}`, path.join(os.homedir(), '.local', 'bin', name)];
   for (const c of candidates) {
     if (c.includes('/') && fs.existsSync(c)) return c;
     if (!c.includes('/') && spawnSync('/usr/bin/which', [c], { timeout: 5000 }).status === 0) return c;
@@ -35,7 +35,8 @@ function run(program, args, cwd) {
 }
 function has(program, args = ['--version']) {
   const cmd = resolved(program);
-  const r = spawnSync(cmd, args, { timeout: 15000, windowsHide: true, shell: windows && /\.cmd$/i.test(cmd) });
+  const checkArgs = program === 'ffmpeg' && args[0] === '--version' ? ['-version'] : args;
+  const r = spawnSync(cmd, checkArgs, { timeout: 15000, windowsHide: true, shell: windows && /\.cmd$/i.test(cmd) });
   return r.status === 0;
 }
 function status() {
@@ -87,8 +88,12 @@ ipcMain.handle('install-dependencies', () => exclusive(async () => {
     const needed = [!s.node && 'node', !s.python && 'python@3.11', !s.ffmpeg && 'ffmpeg'].filter(Boolean);
     if (needed.length) await run(resolved('brew'), ['install', ...needed], app.getPath('documents'));
   } else throw new Error('Este instalador suporta Windows x64 e macOS.');
-  log('\nInstalação das dependências solicitada. Reinicie o instalador se ainda não forem reconhecidas.\n');
-  return { ok: true };
+  const after = status();
+  const missing = ['node', 'npm', 'python', 'ffmpeg'].filter(name => !after[name]);
+  if (missing.length) log(`\nInstalação finalizada, mas não foi possível reconhecer: ${missing.join(', ')}. Confira o caminho dos programas ou reinicie o instalador.\n`);
+  else log('\nDependências essenciais reconhecidas. Você já pode preparar o kit.\n');
+  if (!after.claude) log('Claude Code é opcional nesta etapa: instale separadamente e faça login para criar vídeos por conversa.\n');
+  return { ok: true, missing, claude: after.claude };
 }));
 ipcMain.handle('setup-kit', () => exclusive(async () => {
   const target = copyKit();

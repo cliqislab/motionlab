@@ -14,7 +14,37 @@ let busy = false;
 const dest = () => path.join(app.getPath('documents'), 'MotionLab Kit');
 const source = () => app.isPackaged ? path.join(process.resourcesPath, 'kit') : path.join(__dirname, 'stage', 'kit');
 const executable = name => windows && ['npm', 'claude'].includes(name) ? `${name}.cmd` : name;
+function findWinGetFFmpeg() {
+  if (!windows || !process.env.LOCALAPPDATA) return null;
+  const root = path.join(process.env.LOCALAPPDATA, 'Microsoft', 'WinGet', 'Packages');
+  if (!fs.existsSync(root)) return null;
+  const walk = (dir, depth) => {
+    if (depth < 0) return null;
+    let entries;
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return null; }
+    for (const entry of entries) {
+      if (entry.isFile() && entry.name.toLowerCase() === 'ffmpeg.exe') return path.join(dir, entry.name);
+    }
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        const found = walk(path.join(dir, entry.name), depth - 1);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+  let packageDirs;
+  try { packageDirs = fs.readdirSync(root, { withFileTypes: true }); } catch { return null; }
+  for (const entry of packageDirs) {
+    if (entry.isDirectory() && entry.name.toLowerCase().startsWith('gyan.ffmpeg_')) {
+      const found = walk(path.join(root, entry.name), 5);
+      if (found) return found;
+    }
+  }
+  return null;
+}
 function resolved(name) {
+  if (windows && name === 'ffmpeg') return findWinGetFFmpeg() || executable(name);
   if (!mac) return executable(name);
   const candidates = [name, `/opt/homebrew/bin/${name}`, `/usr/local/bin/${name}`, path.join(os.homedir(), '.local', 'bin', name)];
   for (const c of candidates) {
@@ -41,6 +71,11 @@ function has(program, args = ['--version']) {
   const checkArgs = program === 'ffmpeg' && args[0] === '--version' ? ['-version'] : args;
   const r = spawnSync(cmd, checkArgs, { timeout: 15000, windowsHide: true, shell: windows && /\.cmd$/i.test(cmd) });
   return r.status === 0;
+}
+function wingetInstalled(packageId) {
+  if (!windows) return false;
+  const r = spawnSync('winget', ['list', '--id', packageId, '--exact', '--source', 'winget', '--disable-interactivity'], { timeout: 25000, windowsHide: true, encoding: 'utf8' });
+  return r.status === 0 && (r.stdout || '').toLowerCase().includes(packageId.toLowerCase());
 }
 function blenderAvailable() {
   if (has('blender', ['--version'])) return true;
@@ -224,8 +259,18 @@ ipcMain.handle('install-dependencies', () => exclusive(async () => {
   for (const [name, id] of tasks) {
     progress(done, tasks.length, `Instalando ${name} (${done + 1} de ${tasks.length})...`);
     log(`\nInstalando ${name}... O sistema pode solicitar autorização.\n`);
-    if (windows) await run('winget', ['install', '--id', id, '--exact', '--source', 'winget', '--accept-package-agreements', '--accept-source-agreements'], app.getPath('documents'));
-    else if (mac) await run(resolved('brew'), ['install', id], app.getPath('documents'));
+    if (windows) {
+      if (wingetInstalled(id)) {
+        log(`\n${name} já consta como instalado no winget. Evitando instalar/atualizar novamente.\n`);
+      } else {
+        try {
+          await run('winget', ['install', '--id', id, '--exact', '--source', 'winget', '--accept-package-agreements', '--accept-source-agreements'], app.getPath('documents'));
+        } catch (error) {
+          if (!wingetInstalled(id)) throw error;
+          log(`\n${name} está instalado segundo o winget. Prosseguindo sem tentar atualizar novamente.\n`);
+        }
+      }
+    } else if (mac) await run(resolved('brew'), ['install', id], app.getPath('documents'));
     else throw new Error('Este instalador suporta Windows x64 e macOS.');
     done++;
     progress(done, tasks.length || 1, `${name} concluído (${done} de ${tasks.length}).`);
@@ -233,7 +278,7 @@ ipcMain.handle('install-dependencies', () => exclusive(async () => {
   if (!tasks.length) progress(1, 1, 'Dependências já instaladas.');
   const after = status();
   const missing = ['node', 'npm', 'python', 'ffmpeg'].filter(name => !after[name]);
-  if (missing.length) log(`\nInstalação finalizada, mas não foi possível reconhecer: ${missing.join(', ')}. Confira o caminho dos programas ou reinicie o instalador.\n`);
+  if (missing.length) log(`\nInstalação finalizada, mas não foi possível reconhecer: ${missing.join(', ')}. Reinicie o MotionLab para atualizar o PATH; caso persista, confira o diretório do executável.\n`);
   else log('\nDependências essenciais reconhecidas. Você já pode preparar o kit.\n');
   if (!after.claude) log('Claude Code é opcional nesta etapa: instale separadamente e faça login para criar vídeos por conversa.\n');
   return { ok: true, missing, claude: after.claude };

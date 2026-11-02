@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, clipboard } = require('electron');
 const { spawn, spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -9,6 +9,8 @@ const mac = process.platform === 'darwin';
 if (mac) process.env.PATH = `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${process.env.PATH || ''}`;
 let ui;
 let guide;
+let tutorialsWindow;
+let libraryWindow;
 let busy = false;
 const dest = () => path.join(app.getPath('documents'), 'MotionLab Kit');
 const source = () => app.isPackaged ? path.join(process.resourcesPath, 'kit') : path.join(__dirname, 'stage', 'kit');
@@ -47,7 +49,8 @@ function status() {
     ffmpeg: has('ffmpeg'), claude: has('claude'),
     manager: windows ? has('winget') : mac && has('brew'),
     vscode: editorAvailable(), kit: fs.existsSync(path.join(dest(), 'package.json')),
-    prepared: fs.existsSync(path.join(dest(), 'node_modules', 'remotion', 'package.json')) };
+    prepared: fs.existsSync(path.join(dest(), 'node_modules', 'remotion', 'package.json')),
+    gemini: geminiConfigured() };
 }
 
 function editorPath() {
@@ -67,13 +70,24 @@ function editorAvailable() { return Boolean(editorPath()) || has('code'); }
 function floatGuide() {
   if (guide && !guide.isDestroyed()) { guide.show(); guide.focus(); return; }
   guide = new BrowserWindow({
-    width: 390, height: 500, minWidth: 330, minHeight: 380,
+    width: 430, height: 650, minWidth: 380, minHeight: 560,
     alwaysOnTop: true, autoHideMenuBar: true,
-    title: 'MotionLab — Primeiro vídeo',
-    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true }
+    title: 'MotionLab — Guia flutuante',
+    webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true }
   });
   guide.loadFile(path.join(__dirname, 'guide.html'));
   guide.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+}
+function openContentWindow(kind) {
+  const tutorials = kind === 'tutorials';
+  let win = tutorials ? tutorialsWindow : libraryWindow;
+  if (win && !win.isDestroyed()) { win.show(); win.focus(); return; }
+  win = new BrowserWindow({ width: tutorials ? 990 : 1120, height: 780, minWidth: 700, minHeight: 570,
+    autoHideMenuBar: true, title: tutorials ? 'MotionLab — Tutoriais' : 'MotionLab — Biblioteca de prompts',
+    webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true } });
+  win.loadFile(path.join(__dirname, tutorials ? 'tutorials.html' : 'library.html'));
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  if (tutorials) tutorialsWindow = win; else libraryWindow = win;
 }
 function launchEditor() {
   const target = dest();
@@ -87,6 +101,35 @@ function launchEditor() {
     child.once('error', reject);
     child.once('spawn', () => { child.unref(); floatGuide(); resolve({ ok: true, target }); });
   });
+}
+
+function geminiEnvPath() { return path.join(dest(), '.env'); }
+function geminiConfigured() {
+  const file = geminiEnvPath();
+  if (!fs.existsSync(file)) return false;
+  const match = fs.readFileSync(file, 'utf8').match(/^GEMINI_API_KEY=(.*)$/m);
+  return Boolean(match && match[1].trim());
+}
+function saveGeminiKey(value) {
+  if (typeof value !== 'string') throw new Error('A chave precisa ser informada.');
+  const key = value.trim();
+  if (key.length < 20 || key.length > 512 || !/^[A-Za-z0-9_-]+$/.test(key))
+    throw new Error('Chave inválida: confira se copiou o valor completo, sem espaços.');
+  const target = dest();
+  if (!fs.existsSync(path.join(target, 'package.json')))
+    throw new Error('Prepare o kit na etapa 3 antes de salvar a chave.');
+  const envFile = geminiEnvPath();
+  let content = fs.existsSync(envFile) ? fs.readFileSync(envFile, 'utf8') : '';
+  if (!content && fs.existsSync(path.join(target, '.env.example')))
+    content = fs.readFileSync(path.join(target, '.env.example'), 'utf8');
+  const line = 'GEMINI_API_KEY=' + key;
+  content = /^GEMINI_API_KEY=.*$/m.test(content)
+    ? content.replace(/^GEMINI_API_KEY=.*$/m, line)
+    : content.replace(/\s*$/, '\n') + line + '\n';
+  // Grava apenas no computador do usuário, preservando as demais configurações.
+  fs.writeFileSync(envFile, content, { mode: 0o600 });
+  if (!windows) fs.chmodSync(envFile, 0o600);
+  return { ok: true, configured: true };
 }
 
 function copyKit() {
@@ -117,7 +160,12 @@ app.on('window-all-closed', () => app.quit());
 ipcMain.handle('status', () => status());
 ipcMain.handle('open-folder', () => shell.openPath(dest()));
 ipcMain.handle('open-guide', () => { floatGuide(); return { ok: true }; });
+ipcMain.handle('open-tutorials', () => { openContentWindow('tutorials'); return { ok: true }; });
+ipcMain.handle('open-library', () => { openContentWindow('library'); return { ok: true }; });
+ipcMain.handle('copy-text', (_event, value) => { if (typeof value !== 'string' || value.length > 16000) throw new Error('Texto inválido'); clipboard.writeText(value); return { ok: true }; });
 ipcMain.handle('open-claude-docs', () => shell.openExternal('https://docs.anthropic.com/en/docs/claude-code/setup'));
+ipcMain.handle('open-gemini-keys', () => shell.openExternal('https://aistudio.google.com/api-keys'));
+ipcMain.handle('save-gemini-key', (_event, key) => exclusive(() => saveGeminiKey(key)));
 ipcMain.handle('open-vscode', () => exclusive(launchEditor));
 ipcMain.handle('quick-check', () => exclusive(async () => {
   if (!fs.existsSync(path.join(dest(), 'node_modules'))) throw new Error('Prepare o kit antes de verificar.');

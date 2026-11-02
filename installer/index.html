@@ -1,27 +1,11 @@
 <!doctype html>
 <html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MotionLab Kit — Primeiros passos</title>
-<style>
-:root{font-family:system-ui,-apple-system,sans-serif;color-scheme:dark}*{box-sizing:border-box}
-body{margin:0;padding:25px;background:#0b1021;color:#e9f1ff;line-height:1.5}
-main{max-width:780px;margin:auto}h1{font-size:30px;line-height:1.15;margin:10px 0}h2{font-size:20px;margin:0 0 9px}
-p{margin:8px 0}.muted{color:#adb9d3}.pill{display:inline-block;border-radius:30px;padding:5px 12px;background:#1d3451;color:#93e9e3;font-size:12px}
-section{padding:22px;margin:17px 0;border-radius:15px;background:#151e33;border:1px solid #344561}
-.step{display:none}.step.current{display:block}.step-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.badge{border-radius:20px;background:#203250;color:#a6d4e4;padding:5px 10px;font-size:12px;white-space:nowrap}
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin:12px 0}.item{background:#202b44;padding:9px;border-radius:8px}
-button{background:#38cfb8;border:0;border-radius:9px;color:#07221e;padding:11px 14px;font-weight:700;cursor:pointer;margin:7px 7px 0 0}
-button.secondary{background:#2b3b59;color:#eef4ff}button:disabled{opacity:.55;cursor:wait}
-nav{display:flex;gap:5px;margin:20px 0}.dot{height:5px;flex:1;border-radius:5px;background:#2c3d5c}.dot.active{background:#38cfb8}
-#result{min-height:24px;font-weight:600}.error{color:#ffa1a1}.success{color:#6be7aa}
-pre{max-height:220px;min-height:95px;overflow:auto;background:#080d1b;border-radius:10px;padding:13px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}
-.tip{padding:13px;border-left:3px solid #38cfb8;background:#1c2c43;border-radius:6px;margin:12px 0}
-footer{display:flex;justify-content:space-between;gap:12px;align-items:center}.hide{display:none}
-</style></head><body><main>
-<span class="pill">MotionLab Kit · Configuração guiada</span>
+<link rel="stylesheet" href="theme.css"></head><body><main>
+<header class="top"><div class="brand"><span class="brandmark">M</span> MOTIONLAB <span class="tag">SETUP</span></div><div class="quick-actions"><button class="secondary" id="top-tutorials">Tutoriais</button><button class="secondary" id="top-library">Biblioteca de prompts</button></div></header><p class="eyebrow" style="margin-top:30px">MotionLab Kit / Instalação guiada</p>
 <h1>Seu estúdio de vídeos, passo a passo.</h1>
 <p class="muted">Vamos preparar o computador e abrir o MotionLab no VS Code. Você acompanha todas as etapas.</p>
-<nav aria-label="Progresso da configuração"><i class="dot active"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i></nav>
+<nav aria-label="Progresso da configuração"><i class="dot active"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i></nav>
 <section class="step current" data-step="0">
 <div class="step-head"><h2>1. Verificar seu computador</h2><span class="badge">Diagnóstico</span></div>
 <p class="muted">Os programas já encontrados serão preservados. Não instalaremos versões duplicadas.</p>
@@ -43,17 +27,37 @@ footer{display:flex;justify-content:space-between;gap:12px;align-items:center}.h
 <p class="muted">A verificação analisa o ambiente sem iniciar uma renderização completa. O preparo inicial pode levar alguns minutos.</p>
 </section>
 <section class="step" data-step="3">
-<div class="step-head"><h2>4. Abrir VS Code e configurar Claude</h2><span class="badge">Criação por conversa</span></div>
+<div class="step-head"><h2>4. Configurar voz com Gemini (opcional)</h2><span class="badge">Narração por IA</span></div>
+<p>Quer que seus vídeos tenham narração com vozes do Gemini? Você pode configurar agora ou pular esta etapa.</p>
+<div class="tip">
+<strong>Como criar sua chave:</strong>
+<ol>
+<li>Clique em <strong>Abrir Google AI Studio</strong> e entre com sua conta Google.</li>
+<li>Na página API Keys, clique em <strong>Create API key</strong> (Criar chave de API).</li>
+<li>Escolha ou crie um projeto e copie a chave gerada.</li>
+<li>Volte ao MotionLab, cole a chave abaixo e clique em <strong>Salvar chave</strong>.</li>
+</ol>
+</div>
+<button class="secondary" id="gemini-link">Abrir Google AI Studio</button>
+<p><label for="gemini-key">Sua chave de API Gemini</label></p>
+<input id="gemini-key" type="password" autocomplete="off" spellcheck="false" placeholder="Cole a chave aqui" aria-describedby="gemini-security">
+<button id="gemini-save">Salvar chave no computador</button>
+<p id="gemini-status" class="muted" aria-live="polite">Verificando...</p>
+<p class="muted" id="gemini-security">A chave fica somente no arquivo <code>Documentos/MotionLab Kit/.env</code> deste computador. Não aparece nos logs e não é enviada ao GitHub. Não compartilhe a chave; o uso da API pode estar sujeito a limites e cobrança do Google.</p>
+<p class="muted">A configuração permite usar a voz do Gemini quando você pedir narração no Claude. Você também pode criar vídeos sem chave ou usar a voz gratuita de teste.</p>
+</section>
+<section class="step" data-step="4">
+<div class="step-head"><h2>5. Abrir VS Code e configurar Claude</h2><span class="badge">Criação por conversa</span></div>
 <p>Abra o projeto no VS Code. No terminal integrado, execute <code>claude</code> e entre na sua conta, caso solicitado.</p>
 <div class="tip">O MotionLab abre o VS Code com a pasta correta. Por segurança e compatibilidade, você inicia o terminal com <strong>Terminal → Novo Terminal</strong> e digita <code>claude</code>.</div>
 <p class="muted">Se o Claude Code não estiver instalado, consulte <a href="#" id="claude-link">o guia oficial</a>. Depois, clique em “Verificar novamente” na etapa 1.</p>
 <button id="open-vscode">Abrir projeto no VS Code</button>
 </section>
-<section class="step" data-step="4">
-<div class="step-head"><h2>5. Crie seu primeiro vídeo</h2><span class="badge">Pronto!</span></div>
+<section class="step" data-step="5">
+<div class="step-head"><h2>6. Crie seu primeiro vídeo</h2><span class="badge">Pronto!</span></div>
 <p>Uma janela flutuante acompanha você enquanto trabalha no VS Code, com sugestões e instruções até exportar um MP4.</p>
-<div class="tip">Exemplo para o Claude: “Crie um vídeo animado vertical de 30 segundos apresentando minha empresa, com cores azul e branco.”</div>
-<button id="guide">Mostrar tutorial flutuante</button><button id="folder" class="secondary">Abrir pasta do MotionLab</button>
+<div class="tip">Exemplo para o Claude: “/motion Crie um comercial vertical de 30 segundos para minha empresa, com cores azul e branco. Apresente storyboard antes de renderizar.”</div>
+<button id="guide">Mostrar guia flutuante</button><button id="folder" class="secondary">Abrir pasta do MotionLab</button><div class="card-grid" style="margin-top:20px"><div class="feature"><span class="tag">Aprenda</span><h3>Tutoriais</h3><p>Cortes de vídeo, imagens de referência, 3D, narração e exportação sem sustos.</p><button id="tutorials" class="secondary">Abrir tutoriais</button></div><div class="feature"><span class="tag">Crie</span><h3>Biblioteca de prompts</h3><p>12 roteiros premium para apps, marcas, produtos, MeiaConta e comerciais expressivos.</p><button id="library" class="secondary">Explorar prompts</button></div></div>
 </section>
 <p id="result" role="status" aria-live="polite"></p>
 <details><summary>Ver detalhes técnicos</summary><pre id="log">Aguardando uma operação...</pre></details>
@@ -66,11 +70,11 @@ const steps=[...document.querySelectorAll('.step')];
 const essential=['node','npm','python','ffmpeg'];
 const names={node:'Node.js',npm:'npm',python:'Python',ffmpeg:'FFmpeg',vscode:'VS Code',claude:'Claude Code'};
 function show(index){
- current=Math.max(0,Math.min(4,index));
+ current=Math.max(0,Math.min(steps.length-1,index));
  steps.forEach((el,i)=>el.classList.toggle('current',i===current));
  document.querySelectorAll('.dot').forEach((el,i)=>el.classList.toggle('active',i<=current));
  $('back').disabled=running||current===0;
- $('next').textContent=current===4?'Concluir':'Próxima etapa';
+ $('next').textContent=current===steps.length-1?'Concluir':'Próxima etapa';
  $('next').disabled=running;
  if(current===1) missing();
 }
@@ -95,6 +99,7 @@ async function refresh(){
   if(!s.vscode)$('guidance').textContent+=' Instale o VS Code na etapa 2.';
   if(!s.claude)$('guidance').textContent+=' Claude Code ainda não foi detectado; ele pode ser instalado separadamente.';
   $('guidance').textContent+=s.prepared?' Kit já preparado.':'';
+  $('gemini-status').textContent=s.gemini?'✓ Chave Gemini configurada neste computador. Você pode substituí-la se desejar.':'Chave ainda não configurada. Esta etapa é opcional.';
   missing();
  }catch(e){message('Erro na verificação: '+e.message,true);}
 }
@@ -112,7 +117,7 @@ async function action(method,success){
  finally{running=false;document.querySelectorAll('button').forEach(b=>b.disabled=false);await refresh();show(current);}
 }
 $('back').onclick=()=>show(current-1);
-$('next').onclick=()=>current===4?message('Tudo pronto! O tutorial pode ser reaberto nesta tela.'):show(current+1);
+$('next').onclick=()=>current===steps.length-1?message('Tudo pronto! O tutorial pode ser reaberto nesta tela.'):show(current+1);
 $('refresh').onclick=async()=>{await refresh();message('Verificação atualizada. Veja os itens acima.');};
 $('deps').onclick=()=>action('installDependencies','Dependências essenciais verificadas.');
 $('editor').onclick=()=>action('installVSCode','Instalação do VS Code finalizada.');
@@ -121,6 +126,22 @@ $('check').onclick=()=>action('quickCheck','Diagnóstico concluído. Consulte os
 $('open-vscode').onclick=()=>action('openVSCode','Projeto aberto no VS Code. Siga o tutorial flutuante para iniciar o Claude.');
 $('guide').onclick=()=>action('openGuide','Tutorial flutuante aberto.');
 $('folder').onclick=()=>window.motionlab.openFolder();
+for(const id of ['tutorials','top-tutorials'])$(id).onclick=()=>window.motionlab.openTutorials();
+for(const id of ['library','top-library'])$(id).onclick=()=>window.motionlab.openLibrary();
+$('gemini-link').onclick=()=>window.motionlab.openGeminiKeys();
+$('gemini-save').onclick=async()=>{
+ const input=$('gemini-key');
+ if(!input.value.trim()){message('Cole sua chave antes de salvar.',true);return;}
+ const key=input.value;input.value='';
+ if(running)return;
+ running=true;$('gemini-save').disabled=true;
+ try{
+   const out=await window.motionlab.saveGeminiKey(key);
+   if(out?.error)throw Error(out.error);
+   message('Chave salva apenas no .env local. Para gerar narração, peça ao Claude para usar a voz Gemini.');
+ }catch(e){message('Não foi possível salvar a chave: '+e.message,true);}
+ finally{running=false;$('gemini-save').disabled=false;await refresh();show(current);}
+};
 $('claude-link').onclick=event=>{event.preventDefault();window.motionlab.openClaudeDocs();};
 window.motionlab.onLog(line=>{const l=$('log');l.textContent+=line;l.scrollTop=l.scrollHeight;});
 show(0);refresh();

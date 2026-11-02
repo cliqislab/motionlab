@@ -24,7 +24,10 @@
       "preload.cjs",
       "index.html",
       "package.json",
-      "guide.html"
+      "guide.html",
+      "theme.css",
+      "tutorials.html",
+      "library.html"
     ],
     "extraResources": [
       {

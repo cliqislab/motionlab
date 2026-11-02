@@ -9,8 +9,7 @@ const mac = process.platform === 'darwin';
 if (mac) process.env.PATH = `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${process.env.PATH || ''}`;
 let ui;
 let guide;
-let tutorialsWindow;
-let libraryWindow;
+let contentWindow;
 let busy = false;
 const dest = () => path.join(app.getPath('documents'), 'MotionLab Kit');
 const source = () => app.isPackaged ? path.join(process.resourcesPath, 'kit') : path.join(__dirname, 'stage', 'kit');
@@ -25,6 +24,7 @@ function resolved(name) {
   return name;
 }
 const log = message => { if (ui && !ui.isDestroyed()) ui.webContents.send('log', String(message)); };
+const progress = (done, total, label) => { if (ui && !ui.isDestroyed()) ui.webContents.send('install-progress', { done, total, label }); };
 
 function run(program, args, cwd) {
   return new Promise((resolve, reject) => {
@@ -42,11 +42,21 @@ function has(program, args = ['--version']) {
   const r = spawnSync(cmd, checkArgs, { timeout: 15000, windowsHide: true, shell: windows && /\.cmd$/i.test(cmd) });
   return r.status === 0;
 }
+function blenderAvailable() {
+  if (has('blender', ['--version'])) return true;
+  if (mac) return fs.existsSync('/Applications/Blender.app') || fs.existsSync(path.join(os.homedir(), 'Applications', 'Blender.app'));
+  if (windows) {
+    const root = process.env.ProgramFiles || 'C:\\Program Files';
+    const base = path.join(root, 'Blender Foundation');
+    return fs.existsSync(base) && fs.readdirSync(base).some(name => fs.existsSync(path.join(base, name, 'blender.exe')));
+  }
+  return false;
+}
 function status() {
   return { system: `${os.type()} ${os.arch()}`,
     node: has('node'), npm: has('npm'),
     python: windows ? has('py', ['-3', '--version']) || has('python') : has('python3'),
-    ffmpeg: has('ffmpeg'), claude: has('claude'),
+    ffmpeg: has('ffmpeg'), blender: blenderAvailable(), claude: has('claude'),
     manager: windows ? has('winget') : mac && has('brew'),
     vscode: editorAvailable(), kit: fs.existsSync(path.join(dest(), 'package.json')),
     prepared: fs.existsSync(path.join(dest(), 'node_modules', 'remotion', 'package.json')),
@@ -80,14 +90,15 @@ function floatGuide() {
 }
 function openContentWindow(kind) {
   const tutorials = kind === 'tutorials';
-  let win = tutorials ? tutorialsWindow : libraryWindow;
-  if (win && !win.isDestroyed()) { win.show(); win.focus(); return; }
-  win = new BrowserWindow({ width: tutorials ? 990 : 1120, height: 780, minWidth: 700, minHeight: 570,
-    autoHideMenuBar: true, title: tutorials ? 'MotionLab — Tutoriais' : 'MotionLab — Biblioteca de prompts',
-    webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true } });
-  win.loadFile(path.join(__dirname, tutorials ? 'tutorials.html' : 'library.html'));
-  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
-  if (tutorials) tutorialsWindow = win; else libraryWindow = win;
+  if (!contentWindow || contentWindow.isDestroyed()) {
+    contentWindow = new BrowserWindow({ width: 1060, height: 780, minWidth: 700, minHeight: 570,
+      autoHideMenuBar: true, title: 'MotionLab — Tutoriais e Biblioteca',
+      webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true } });
+    contentWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  }
+  const target = tutorials ? 'tutorials.html' : 'library.html';
+  if (!contentWindow.webContents.getURL().endsWith('/' + target)) contentWindow.loadFile(path.join(__dirname, target));
+  contentWindow.show(); contentWindow.focus();
 }
 function launchEditor() {
   const target = dest();
@@ -189,21 +200,37 @@ ipcMain.handle('install-vscode', () => exclusive(async () => {
   else throw new Error('Sistema não suportado.');
   return { ok: true, detected: editorAvailable() };
 }));
+ipcMain.handle('install-blender', () => exclusive(async () => {
+  if (blenderAvailable()) return { ok: true, alreadyInstalled: true };
+  if (!status().manager) throw new Error(mac ? 'Homebrew indisponível. Instale pelo site brew.sh.' : 'winget indisponível. Instale App Installer pela Microsoft Store.');
+  progress(0, 1, 'Instalando Blender (opcional para 3D real)...');
+  if (mac) await run(resolved('brew'), ['install', '--cask', 'blender'], app.getPath('documents'));
+  else if (windows) await run('winget', ['install', '--id', 'BlenderFoundation.Blender', '--exact', '--source', 'winget', '--accept-package-agreements', '--accept-source-agreements'], app.getPath('documents'));
+  else throw new Error('Sistema não suportado.');
+  const detected = blenderAvailable();
+  progress(1, 1, detected ? 'Blender instalado.' : 'Instalação terminou; reinicie para detectar o Blender.');
+  return { ok: true, detected };
+}));
 ipcMain.handle('install-dependencies', () => exclusive(async () => {
   const s = status();
   if (!s.manager) throw new Error(windows
     ? 'winget indisponível. Instale/atualize o App Installer pela Microsoft Store.'
     : 'Homebrew não detectado. Instale pelo site oficial brew.sh e abra este instalador novamente.');
-  if (windows) {
-    const packages = [['node', 'OpenJS.NodeJS.LTS'], ['python', 'Python.Python.3.11'], ['ffmpeg', 'Gyan.FFmpeg']];
-    for (const [name, id] of packages) if (!s[name]) {
-      log(`\nInstalando ${name}... O Windows pode pedir sua autorização.\n`);
-      await run('winget', ['install', '--id', id, '--exact', '--source', 'winget', '--accept-package-agreements', '--accept-source-agreements'], app.getPath('documents'));
-    }
-  } else if (mac) {
-    const needed = [!s.node && 'node', !s.python && 'python@3.11', !s.ffmpeg && 'ffmpeg'].filter(Boolean);
-    if (needed.length) await run(resolved('brew'), ['install', ...needed], app.getPath('documents'));
-  } else throw new Error('Este instalador suporta Windows x64 e macOS.');
+  const tasks = windows
+    ? [['node', 'OpenJS.NodeJS.LTS'], ['python', 'Python.Python.3.11'], ['ffmpeg', 'Gyan.FFmpeg']].filter(([name]) => !s[name])
+    : [['node', 'node'], ['python', 'python@3.11'], ['ffmpeg', 'ffmpeg']].filter(([name]) => !s[name]);
+  let done = 0;
+  progress(done, tasks.length || 1, tasks.length ? 'Preparando instalação...' : 'Dependências já encontradas.');
+  for (const [name, id] of tasks) {
+    progress(done, tasks.length, `Instalando ${name} (${done + 1} de ${tasks.length})...`);
+    log(`\nInstalando ${name}... O sistema pode solicitar autorização.\n`);
+    if (windows) await run('winget', ['install', '--id', id, '--exact', '--source', 'winget', '--accept-package-agreements', '--accept-source-agreements'], app.getPath('documents'));
+    else if (mac) await run(resolved('brew'), ['install', id], app.getPath('documents'));
+    else throw new Error('Este instalador suporta Windows x64 e macOS.');
+    done++;
+    progress(done, tasks.length || 1, `${name} concluído (${done} de ${tasks.length}).`);
+  }
+  if (!tasks.length) progress(1, 1, 'Dependências já instaladas.');
   const after = status();
   const missing = ['node', 'npm', 'python', 'ffmpeg'].filter(name => !after[name]);
   if (missing.length) log(`\nInstalação finalizada, mas não foi possível reconhecer: ${missing.join(', ')}. Confira o caminho dos programas ou reinicie o instalador.\n`);

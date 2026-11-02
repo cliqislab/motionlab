@@ -8,6 +8,7 @@ const windows = process.platform === 'win32';
 const mac = process.platform === 'darwin';
 if (mac) process.env.PATH = `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${process.env.PATH || ''}`;
 let ui;
+let guide;
 let busy = false;
 const dest = () => path.join(app.getPath('documents'), 'MotionLab Kit');
 const source = () => app.isPackaged ? path.join(process.resourcesPath, 'kit') : path.join(__dirname, 'stage', 'kit');
@@ -44,8 +45,50 @@ function status() {
     node: has('node'), npm: has('npm'),
     python: windows ? has('py', ['-3', '--version']) || has('python') : has('python3'),
     ffmpeg: has('ffmpeg'), claude: has('claude'),
-    manager: windows ? has('winget') : mac && has('brew') };
+    manager: windows ? has('winget') : mac && has('brew'),
+    vscode: editorAvailable(), kit: fs.existsSync(path.join(dest(), 'package.json')),
+    prepared: fs.existsSync(path.join(dest(), 'node_modules', 'remotion', 'package.json')) };
 }
+
+function editorPath() {
+  if (mac) {
+    const apps = ['/Applications/Visual Studio Code.app', path.join(os.homedir(), 'Applications', 'Visual Studio Code.app')];
+    return apps.find(p => fs.existsSync(p)) || null;
+  }
+  if (windows) {
+    const roots = [process.env.LOCALAPPDATA, process.env.ProgramFiles, process.env['ProgramFiles(x86)']].filter(Boolean);
+    return roots.map(p => path.join(p, 'Programs', 'Microsoft VS Code', 'Code.exe'))
+      .concat(roots.map(p => path.join(p, 'Microsoft VS Code', 'Code.exe')))
+      .find(p => fs.existsSync(p)) || null;
+  }
+  return null;
+}
+function editorAvailable() { return Boolean(editorPath()) || has('code'); }
+function floatGuide() {
+  if (guide && !guide.isDestroyed()) { guide.show(); guide.focus(); return; }
+  guide = new BrowserWindow({
+    width: 390, height: 500, minWidth: 330, minHeight: 380,
+    alwaysOnTop: true, autoHideMenuBar: true,
+    title: 'MotionLab — Primeiro vídeo',
+    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true }
+  });
+  guide.loadFile(path.join(__dirname, 'guide.html'));
+  guide.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+}
+function launchEditor() {
+  const target = dest();
+  if (!fs.existsSync(path.join(target, 'package.json')))
+    throw new Error('Prepare a pasta do MotionLab antes de abrir o VS Code.');
+  if (!editorAvailable()) throw new Error('VS Code ainda não encontrado. Instale na etapa 2.');
+  const exe = mac ? '/usr/bin/open' : editorPath() || 'code';
+  const args = mac ? ['-a', editorPath() || 'Visual Studio Code', target] : [target];
+  return new Promise((resolve, reject) => {
+    const child = spawn(exe, args, { detached: true, stdio: 'ignore', windowsHide: true, shell: windows && exe === 'code' });
+    child.once('error', reject);
+    child.once('spawn', () => { child.unref(); floatGuide(); resolve({ ok: true, target }); });
+  });
+}
+
 function copyKit() {
   const target = dest();
   if (!fs.existsSync(path.join(source(), 'package.json'))) throw new Error('Kit não foi incluído no instalador.');
@@ -64,7 +107,7 @@ async function exclusive(fn) {
 }
 
 app.whenReady().then(() => {
-  ui = new BrowserWindow({ width: 760, height: 720, minWidth: 610, minHeight: 550,
+  ui = new BrowserWindow({ width: 850, height: 760, minWidth: 690, minHeight: 600,
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true } });
   ui.setMenuBarVisibility(false);
   ui.loadFile(path.join(__dirname, 'index.html'));
@@ -73,6 +116,24 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => app.quit());
 ipcMain.handle('status', () => status());
 ipcMain.handle('open-folder', () => shell.openPath(dest()));
+ipcMain.handle('open-guide', () => { floatGuide(); return { ok: true }; });
+ipcMain.handle('open-claude-docs', () => shell.openExternal('https://docs.anthropic.com/en/docs/claude-code/setup'));
+ipcMain.handle('open-vscode', () => exclusive(launchEditor));
+ipcMain.handle('quick-check', () => exclusive(async () => {
+  if (!fs.existsSync(path.join(dest(), 'node_modules'))) throw new Error('Prepare o kit antes de verificar.');
+  log('\nVerificando a instalação, sem renderizar vídeo completo...\n');
+  await run(resolved('npm'), ['run', 'doctor'], dest());
+  return { ok: true };
+}));
+ipcMain.handle('install-vscode', () => exclusive(async () => {
+  if (editorAvailable()) return { ok: true, alreadyInstalled: true };
+  if (!status().manager) throw new Error(mac ? 'Instale o Homebrew (brew.sh) antes de instalar VS Code.' : 'Instale o App Installer pela Microsoft Store antes de instalar VS Code.');
+  log('\nInstalando Visual Studio Code. O sistema pode solicitar confirmação...\n');
+  if (mac) await run(resolved('brew'), ['install', '--cask', 'visual-studio-code'], app.getPath('documents'));
+  else if (windows) await run('winget', ['install', '--id', 'Microsoft.VisualStudioCode', '--exact', '--source', 'winget', '--accept-package-agreements', '--accept-source-agreements'], app.getPath('documents'));
+  else throw new Error('Sistema não suportado.');
+  return { ok: true, detected: editorAvailable() };
+}));
 ipcMain.handle('install-dependencies', () => exclusive(async () => {
   const s = status();
   if (!s.manager) throw new Error(windows

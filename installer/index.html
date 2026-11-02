@@ -18,6 +18,10 @@
 <div class="tip" id="missing">Verificando programas...</div>
 <button id="deps">Instalar Node.js, Python e FFmpeg</button>
 <button id="editor">Instalar VS Code</button>
+<div class="tip"><strong>Blender — opcional para 3D real.</strong> Para motion 2D, cortes e efeitos 2.5D não é necessário.</div>
+<button id="blender" class="secondary">Instalar Blender (opcional)</button>
+<p class="muted">As skills <code>/motion</code>, <code>motion-video</code> e <code>motionmaxxing</code> já acompanham o kit e são copiadas na etapa 3. Não precisam ser baixadas separadamente.</p>
+<div id="install-progress" role="status" aria-live="polite" hidden><div style="display:flex;justify-content:space-between;gap:12px"><span id="progress-label">Preparando...</span><strong id="progress-pct">0%</strong></div><div style="height:11px;border-radius:99px;background:#26354a;overflow:hidden;margin-top:10px"><div id="progress-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#8af5d5,#b5a4ff);transition:width .3s"></div></div><p class="muted" style="font-size:12px">Porcentagem por etapas concluídas. Downloads podem demorar dentro da mesma etapa.</p></div>
 <p class="muted">O Claude Code será configurado em uma etapa separada e requer uma conta própria.</p>
 </section>
 <section class="step" data-step="2">
@@ -73,13 +77,13 @@ const $=id=>document.getElementById(id);
 let current=0,lastStatus=null,running=false;
 const steps=[...document.querySelectorAll('.step')];
 const essential=['node','npm','python','ffmpeg'];
-const names={node:'Node.js',npm:'npm',python:'Python',ffmpeg:'FFmpeg',vscode:'VS Code',claude:'Claude Code'};
+const names={node:'Node.js',npm:'npm',python:'Python',ffmpeg:'FFmpeg',vscode:'VS Code',blender:'Blender (opcional)',claude:'Claude Code'};
 function show(index){
  current=Math.max(0,Math.min(steps.length-1,index));
  steps.forEach((el,i)=>el.classList.toggle('current',i===current));
  document.querySelectorAll('.dot').forEach((el,i)=>el.classList.toggle('active',i<=current));
  $('back').disabled=running||current===0;
- $('next').textContent=current===steps.length-1?'Concluir':'Próxima etapa';
+ $('next').hidden=current===steps.length-1;
  $('next').disabled=running;
  if(current===1) missing();
 }
@@ -89,6 +93,7 @@ function missing(){
  $('missing').textContent=pending.length?'Faltando: '+pending.join(', '):'Tudo instalado! Você já pode seguir.';
  $('deps').disabled=running||essential.every(k=>lastStatus[k]);
  $('editor').disabled=running||lastStatus.vscode;
+ $('blender').disabled=running||lastStatus.blender;
 }
 async function refresh(){
  try{
@@ -122,10 +127,18 @@ async function action(method,success){
  finally{running=false;document.querySelectorAll('button').forEach(b=>b.disabled=false);await refresh();show(current);}
 }
 $('back').onclick=()=>show(current-1);
-$('next').onclick=()=>current===steps.length-1?$('open-vscode').click():show(current+1);
+$('next').onclick=()=>show(current+1);
 $('refresh').onclick=async()=>{await refresh();message('Verificação atualizada. Veja os itens acima.');};
-$('deps').onclick=()=>action('installDependencies','Dependências essenciais verificadas.');
+$('deps').onclick=()=>{ $('install-progress').hidden=false; $('progress-label').textContent='Iniciando instalação...'; $('progress-pct').textContent='0%'; $('progress-fill').style.width='0%'; action('installDependencies','Dependências essenciais verificadas.'); };
 $('editor').onclick=()=>action('installVSCode','Instalação do VS Code finalizada.');
+$('blender').onclick=()=>action('installBlender','Blender instalado ou verificado.');
+window.motionlab.onProgress(({done,total,label})=>{
+ const pct=Math.min(100,Math.max(0,Math.round(100*done/Math.max(1,total))));
+ $('install-progress').hidden=false;
+ $('progress-label').textContent=label;
+ $('progress-pct').textContent=pct+'%';
+ $('progress-fill').style.width=pct+'%';
+});
 $('setup').onclick=()=>action('setup','Preparo do kit finalizado.');
 $('check').onclick=()=>action('quickCheck','Diagnóstico concluído. Consulte os detalhes técnicos.');
 $('open-vscode').onclick=()=>action('openVSCode','VS Code e guia flutuante abertos. Siga os passos do guia para iniciar o Claude.');

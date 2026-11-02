@@ -7,6 +7,15 @@ const os = require('node:os');
 const windows = process.platform === 'win32';
 const mac = process.platform === 'darwin';
 if (mac) process.env.PATH = `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${process.env.PATH || ''}`;
+function refreshWindowsPath() {
+  if (!windows) return;
+  // A instalação pelo winget atualiza o registro, mas não o ambiente deste processo Electron.
+  const script = '[Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [Environment]::GetEnvironmentVariable("Path","User")';
+  const r = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], { encoding: 'utf8', timeout: 12000, windowsHide: true });
+  if (r.status !== 0 || !r.stdout.trim()) return;
+  const paths = [...(process.env.PATH || '').split(';'), ...r.stdout.trim().split(';')].map(v => v.trim()).filter(Boolean);
+  process.env.PATH = [...new Map(paths.map(v => [v.toLowerCase(), v])).values()].join(';');
+}
 let ui;
 let guide;
 let contentWindow;
@@ -63,7 +72,10 @@ function run(program, args, cwd) {
     child.stdout.on('data', b => log(b));
     child.stderr.on('data', b => log(b));
     child.on('error', reject);
-    child.on('close', code => code === 0 ? resolve() : reject(new Error(`${program} terminou com código ${code}`)));
+    child.on('close', code => {
+      if (code === 0) { refreshWindowsPath(); resolve(); }
+      else reject(new Error(`${program} terminou com código ${code}`));
+    });
   });
 }
 function has(program, args = ['--version']) {
@@ -88,6 +100,7 @@ function blenderAvailable() {
   return false;
 }
 function status() {
+  refreshWindowsPath();
   return { system: `${os.type()} ${os.arch()}`,
     node: has('node'), npm: has('npm'),
     python: windows ? has('py', ['-3', '--version']) || has('python') : has('python3'),
@@ -284,6 +297,7 @@ ipcMain.handle('install-dependencies', () => exclusive(async () => {
   return { ok: true, missing, claude: after.claude };
 }));
 ipcMain.handle('setup-kit', () => exclusive(async () => {
+  refreshWindowsPath();
   const target = copyKit();
   const s = status();
   if (!s.node || !s.npm || !s.python || !s.ffmpeg)

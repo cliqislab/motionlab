@@ -14,15 +14,15 @@
 </section>
 <section class="step" data-step="1">
 <div class="step-head"><h2>2. Instalar o que falta</h2><span class="badge">Sua autorização</span></div>
-<p class="muted">O MotionLab usa Homebrew (Mac) ou winget (Windows) para instalar Node.js, Python, FFmpeg e VS Code. Podem surgir pedidos de confirmação do sistema.</p>
+<p class="muted">O MotionLab usa Homebrew (Mac) ou winget (Windows) para instalar Node.js, Python, FFmpeg, Claude Code e VS Code. Podem surgir pedidos de confirmação do sistema.</p>
 <div class="tip" id="missing">Verificando programas...</div>
-<button id="deps">Instalar Node.js, Python e FFmpeg</button>
+<button id="deps">Instalar Node.js, Python, FFmpeg e Claude Code</button>
 <button id="editor">Instalar VS Code</button>
 <div class="tip"><strong>Blender — opcional para 3D real.</strong> Para motion 2D, cortes e efeitos 2.5D não é necessário.</div>
 <button id="blender" class="secondary">Instalar Blender (opcional)</button>
 <p class="muted">As skills <code>/motion</code>, <code>motion-video</code> e <code>motionmaxxing</code> já acompanham o kit e são copiadas na etapa 3. Não precisam ser baixadas separadamente.</p>
 <div id="install-progress" role="status" aria-live="polite" hidden><div style="display:flex;justify-content:space-between;gap:12px"><span id="progress-label">Preparando...</span><strong id="progress-pct">0%</strong></div><div style="height:11px;border-radius:99px;background:#26354a;overflow:hidden;margin-top:10px"><div id="progress-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#8af5d5,#b5a4ff);transition:width .3s"></div></div><p class="muted" style="font-size:12px">Porcentagem por etapas concluídas. Downloads podem demorar dentro da mesma etapa.</p></div>
-<p class="muted">O Claude Code será configurado em uma etapa separada e requer uma conta própria.</p>
+<p class="muted">O Claude Code também será instalado se estiver ausente. No primeiro uso, entre na sua conta Claude.</p>
 </section>
 <section class="step" data-step="2">
 <div class="step-head"><h2>3. Preparar os arquivos do MotionLab</h2><span class="badge">Projeto</span></div>
@@ -63,7 +63,7 @@
 <div class="step-head"><h2>6. Abrir seu estúdio no VS Code</h2><span class="badge">Última etapa</span></div>
 <p>Ao clicar abaixo, vamos abrir o <strong>Visual Studio Code com sua pasta MotionLab Kit</strong> e, em seguida, mostrar automaticamente o <strong>guia flutuante</strong>.</p>
 <div class="tip">Siga o guia para abrir <strong>Terminal → Novo Terminal</strong>, digitar <code>claude</code> e criar o primeiro vídeo com <code>/motion</code>. No próprio guia há um menu para Tutoriais e Biblioteca de prompts.</div>
-<p class="muted">Se ainda não tiver Claude Code, consulte <a href="#" id="claude-link">as instruções oficiais de instalação</a>. Você precisará de uma conta própria.</p>
+<p class="muted">O Claude Code é instalado na etapa 2. No primeiro uso, faça login na sua conta Claude.</p>
 <button id="open-vscode">Abrir VS Code e guia flutuante</button>
 <button id="guide" class="secondary">Abrir apenas o guia</button>
 <button id="folder" class="secondary">Abrir pasta do MotionLab</button>
@@ -77,6 +77,7 @@ const $=id=>document.getElementById(id);
 let current=0,lastStatus=null,running=false;
 const steps=[...document.querySelectorAll('.step')];
 const essential=['node','npm','python','ffmpeg'];
+const installable=[...essential,'claude'];
 const names={node:'Node.js',npm:'npm',python:'Python',ffmpeg:'FFmpeg',vscode:'VS Code',blender:'Blender (opcional)',claude:'Claude Code'};
 function show(index){
  current=Math.max(0,Math.min(steps.length-1,index));
@@ -89,9 +90,9 @@ function show(index){
 }
 function missing(){
  if(!lastStatus)return;
- const pending=[...essential,'vscode'].filter(k=>!lastStatus[k]).map(k=>names[k]);
+ const pending=[...installable,'vscode'].filter(k=>!lastStatus[k]).map(k=>names[k]);
  $('missing').textContent=pending.length?'Faltando: '+pending.join(', '):'Tudo instalado! Você já pode seguir.';
- $('deps').disabled=running||essential.every(k=>lastStatus[k]);
+ $('deps').disabled=running||installable.every(k=>lastStatus[k]);
  $('editor').disabled=running||lastStatus.vscode;
  $('blender').disabled=running||lastStatus.blender;
 }
@@ -107,7 +108,7 @@ async function refresh(){
   const essentialMissing=essential.filter(k=>!s[k]).map(k=>names[k]);
   $('guidance').textContent=essentialMissing.length?'Faltando para preparar o kit: '+essentialMissing.join(', ')+'.':'Dependências essenciais encontradas.';
   if(!s.vscode)$('guidance').textContent+=' Instale o VS Code na etapa 2.';
-  if(!s.claude)$('guidance').textContent+=' Claude Code ainda não foi detectado; ele pode ser instalado separadamente.';
+  if(!s.claude)$('guidance').textContent+=' Claude Code pendente: instale na etapa 2.';
   $('guidance').textContent+=s.prepared?' Kit já preparado.':'';
   $('gemini-status').textContent=s.gemini?'✓ Chave Gemini configurada neste computador. Você pode substituí-la se desejar.':'Chave ainda não configurada. Esta etapa é opcional.';
   missing();
@@ -161,7 +162,7 @@ $('gemini-save').onclick=async()=>{
  }catch(e){message('Não foi possível salvar a chave: '+e.message,true);}
  finally{running=false;$('gemini-save').disabled=false;await refresh();show(current);}
 };
-$('claude-link').onclick=event=>{event.preventDefault();window.motionlab.openClaudeDocs();};
+
 window.motionlab.onLog(line=>{const l=$('log');l.textContent+=line;l.scrollTop=l.scrollHeight;});
 show(0);refresh();
 </script></body></html>

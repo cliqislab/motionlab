@@ -22,7 +22,12 @@ let contentWindow;
 let busy = false;
 const dest = () => path.join(app.getPath('documents'), 'MotionLab Kit');
 const source = () => app.isPackaged ? path.join(process.resourcesPath, 'kit') : path.join(__dirname, 'stage', 'kit');
-const executable = name => windows && ['npm', 'claude'].includes(name) ? `${name}.cmd` : name;
+const executable = name => windows && name === 'npm' ? 'npm.cmd' : name;
+function windowsClaudePath() {
+  if (!windows) return null;
+  return [path.join(os.homedir(), '.local', 'bin', 'claude.exe'),
+    path.join(process.env.APPDATA || '', 'npm', 'claude.cmd')].find(p => fs.existsSync(p)) || null;
+}
 function findWinGetFFmpeg() {
   if (!windows || !process.env.LOCALAPPDATA) return null;
   const root = path.join(process.env.LOCALAPPDATA, 'Microsoft', 'WinGet', 'Packages');
@@ -54,6 +59,7 @@ function findWinGetFFmpeg() {
 }
 function resolved(name) {
   if (windows && name === 'ffmpeg') return findWinGetFFmpeg() || executable(name);
+  if (windows && name === 'claude') return windowsClaudePath() || name;
   if (!mac) return executable(name);
   const candidates = [name, `/opt/homebrew/bin/${name}`, `/usr/local/bin/${name}`, path.join(os.homedir(), '.local', 'bin', name)];
   for (const c of candidates) {
@@ -148,18 +154,35 @@ function openContentWindow(kind) {
   if (!contentWindow.webContents.getURL().endsWith('/' + target)) contentWindow.loadFile(path.join(__dirname, target));
   contentWindow.show(); contentWindow.focus();
 }
-function launchEditor() {
+async function launchEditor() {
   const target = dest();
   if (!fs.existsSync(path.join(target, 'package.json')))
     throw new Error('Prepare a pasta do MotionLab antes de abrir o VS Code.');
-  if (!editorAvailable()) throw new Error('VS Code ainda não encontrado. Instale na etapa 2.');
-  const exe = mac ? '/usr/bin/open' : editorPath() || 'code';
-  const args = mac ? ['-a', editorPath() || 'Visual Studio Code', target] : [target];
-  return new Promise((resolve, reject) => {
-    const child = spawn(exe, args, { detached: true, stdio: 'ignore', windowsHide: true, shell: windows && exe === 'code' });
-    child.once('error', reject);
-    child.once('spawn', () => { child.unref(); floatGuide(); resolve({ ok: true, target }); });
+  if (!editorAvailable()) throw new Error('VS Code não encontrado. Instale na etapa 2.');
+  const editor = editorPath();
+  const exe = mac ? '/usr/bin/open' : editor || 'code';
+  const args = mac ? ['-a', editor || 'Visual Studio Code', target] : ['--new-window', target];
+  await new Promise((resolve, reject) => {
+    const child = spawn(exe, args, {
+      detached: true, stdio: 'ignore', windowsHide: false,
+      shell: windows && !editor
+    });
+    const timer = setTimeout(() => reject(new Error('Tempo esgotado ao iniciar o VS Code.')), 15000);
+    child.once('error', error => { clearTimeout(timer); reject(error); });
+    child.once('spawn', () => { clearTimeout(timer); child.unref(); resolve(); });
   });
+  if (windows) {
+    let opened = false;
+    for (let i = 0; i < 8; i++) {
+      await new Promise(resolve => setTimeout(resolve, 850));
+      const check = spawnSync('tasklist.exe', ['/FI', 'IMAGENAME eq Code.exe', '/NH'],
+        { encoding: 'utf8', windowsHide: true, timeout: 5000 });
+      if (check.status === 0 && /Code\.exe/i.test(check.stdout || '')) { opened = true; break; }
+    }
+    if (!opened) throw new Error('VS Code não iniciou. Abra a pasta Documentos/MotionLab Kit manualmente no VS Code e tente novamente.');
+  }
+  floatGuide();
+  return { ok: true, target };
 }
 
 function geminiEnvPath() { return path.join(dest(), '.env'); }
@@ -265,8 +288,8 @@ ipcMain.handle('install-dependencies', () => exclusive(async () => {
     ? 'winget indisponível. Instale/atualize o App Installer pela Microsoft Store.'
     : 'Homebrew não detectado. Instale pelo site oficial brew.sh e abra este instalador novamente.');
   const tasks = windows
-    ? [['node', 'OpenJS.NodeJS.LTS'], ['python', 'Python.Python.3.11'], ['ffmpeg', 'Gyan.FFmpeg']].filter(([name]) => !s[name])
-    : [['node', 'node'], ['python', 'python@3.11'], ['ffmpeg', 'ffmpeg']].filter(([name]) => !s[name]);
+    ? [['node', 'OpenJS.NodeJS.LTS'], ['python', 'Python.Python.3.11'], ['ffmpeg', 'Gyan.FFmpeg'], ['claude', 'Anthropic.ClaudeCode']].filter(([name]) => !s[name])
+    : [['node', 'node'], ['python', 'python@3.11'], ['ffmpeg', 'ffmpeg'], ['claude', 'claude-code']].filter(([name]) => !s[name]);
   let done = 0;
   progress(done, tasks.length || 1, tasks.length ? 'Preparando instalação...' : 'Dependências já encontradas.');
   for (const [name, id] of tasks) {
@@ -283,17 +306,17 @@ ipcMain.handle('install-dependencies', () => exclusive(async () => {
           log(`\n${name} está instalado segundo o winget. Prosseguindo sem tentar atualizar novamente.\n`);
         }
       }
-    } else if (mac) await run(resolved('brew'), ['install', id], app.getPath('documents'));
+    } else if (mac) await run(resolved('brew'), name === 'claude' ? ['install', '--cask', id] : ['install', id], app.getPath('documents'));
     else throw new Error('Este instalador suporta Windows x64 e macOS.');
     done++;
     progress(done, tasks.length || 1, `${name} concluído (${done} de ${tasks.length}).`);
   }
   if (!tasks.length) progress(1, 1, 'Dependências já instaladas.');
   const after = status();
-  const missing = ['node', 'npm', 'python', 'ffmpeg'].filter(name => !after[name]);
+  const missing = ['node', 'npm', 'python', 'ffmpeg', 'claude'].filter(name => !after[name]);
   if (missing.length) log(`\nInstalação finalizada, mas não foi possível reconhecer: ${missing.join(', ')}. Reinicie o MotionLab para atualizar o PATH; caso persista, confira o diretório do executável.\n`);
   else log('\nDependências essenciais reconhecidas. Você já pode preparar o kit.\n');
-  if (!after.claude) log('Claude Code é opcional nesta etapa: instale separadamente e faça login para criar vídeos por conversa.\n');
+  if (after.claude) log('Claude Code detectado. Faça login na primeira execução.\n');
   return { ok: true, missing, claude: after.claude };
 }));
 ipcMain.handle('setup-kit', () => exclusive(async () => {
@@ -304,7 +327,7 @@ ipcMain.handle('setup-kit', () => exclusive(async () => {
     throw new Error('Instale primeiro Node.js, Python e FFmpeg. Reinicie este programa após a instalação.');
   log(`\nPreparando o kit em ${target}\n`);
   await run(resolved('npm'), ['run', 'setup', '--', '--sim'], target);
-  log('\nInstalação concluída! Para criar vídeos por conversa, é necessário instalar e autenticar o Claude Code.\n');
+  log('\nKit preparado. Faça login em sua conta Claude para criar vídeos.\n');
   return { ok: true };
 }));
 ipcMain.handle('test-demo', () => exclusive(async () => {

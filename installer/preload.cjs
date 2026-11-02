@@ -5,5 +5,10 @@ contextBridge.exposeInMainWorld('motionlab', {
   setup: () => ipcRenderer.invoke('setup-kit'),
   demo: () => ipcRenderer.invoke('test-demo'),
   openFolder: () => ipcRenderer.invoke('open-folder'),
+  installVSCode: () => ipcRenderer.invoke('install-vscode'),
+  openVSCode: () => ipcRenderer.invoke('open-vscode'),
+  quickCheck: () => ipcRenderer.invoke('quick-check'),
+  openGuide: () => ipcRenderer.invoke('open-guide'),
+  openClaudeDocs: () => ipcRenderer.invoke('open-claude-docs'),
   onLog: fn => ipcRenderer.on('log', (_, line) => fn(line))
 });

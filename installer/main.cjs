@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, clipboard } = require('electron');
 const { spawn, spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -9,6 +9,8 @@ const mac = process.platform === 'darwin';
 if (mac) process.env.PATH = `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${process.env.PATH || ''}`;
 let ui;
 let guide;
+let tutorialsWindow;
+let libraryWindow;
 let busy = false;
 const dest = () => path.join(app.getPath('documents'), 'MotionLab Kit');
 const source = () => app.isPackaged ? path.join(process.resourcesPath, 'kit') : path.join(__dirname, 'stage', 'kit');
@@ -68,13 +70,24 @@ function editorAvailable() { return Boolean(editorPath()) || has('code'); }
 function floatGuide() {
   if (guide && !guide.isDestroyed()) { guide.show(); guide.focus(); return; }
   guide = new BrowserWindow({
-    width: 390, height: 500, minWidth: 330, minHeight: 380,
+    width: 430, height: 650, minWidth: 380, minHeight: 560,
     alwaysOnTop: true, autoHideMenuBar: true,
-    title: 'MotionLab — Primeiro vídeo',
-    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true }
+    title: 'MotionLab — Guia flutuante',
+    webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true }
   });
   guide.loadFile(path.join(__dirname, 'guide.html'));
   guide.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+}
+function openContentWindow(kind) {
+  const tutorials = kind === 'tutorials';
+  let win = tutorials ? tutorialsWindow : libraryWindow;
+  if (win && !win.isDestroyed()) { win.show(); win.focus(); return; }
+  win = new BrowserWindow({ width: tutorials ? 990 : 1120, height: 780, minWidth: 700, minHeight: 570,
+    autoHideMenuBar: true, title: tutorials ? 'MotionLab — Tutoriais' : 'MotionLab — Biblioteca de prompts',
+    webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true } });
+  win.loadFile(path.join(__dirname, tutorials ? 'tutorials.html' : 'library.html'));
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  if (tutorials) tutorialsWindow = win; else libraryWindow = win;
 }
 function launchEditor() {
   const target = dest();
@@ -147,6 +160,9 @@ app.on('window-all-closed', () => app.quit());
 ipcMain.handle('status', () => status());
 ipcMain.handle('open-folder', () => shell.openPath(dest()));
 ipcMain.handle('open-guide', () => { floatGuide(); return { ok: true }; });
+ipcMain.handle('open-tutorials', () => { openContentWindow('tutorials'); return { ok: true }; });
+ipcMain.handle('open-library', () => { openContentWindow('library'); return { ok: true }; });
+ipcMain.handle('copy-text', (_event, value) => { if (typeof value !== 'string' || value.length > 16000) throw new Error('Texto inválido'); clipboard.writeText(value); return { ok: true }; });
 ipcMain.handle('open-claude-docs', () => shell.openExternal('https://docs.anthropic.com/en/docs/claude-code/setup'));
 ipcMain.handle('open-gemini-keys', () => shell.openExternal('https://aistudio.google.com/api-keys'));
 ipcMain.handle('save-gemini-key', (_event, key) => exclusive(() => saveGeminiKey(key)));

@@ -15,8 +15,8 @@
 </style></head><body><main>
 <span class="pill">MotionLab Kit · Assistente de instalação</span><h1>Vamos preparar seu computador</h1>
 <p class="muted">Você acompanha tudo por aqui. Os programas externos são instalados somente com sua autorização.</p>
-<section><h2>1. Verificação</h2><div class="grid" id="checks">Verificando...</div><button class="secondary" id="refresh">Verificar novamente</button></section>
-<section><h2>2. Instalar o que falta</h2><p class="muted">Usa winget (Windows) ou Homebrew (Mac). Pode exigir confirmações e acesso à internet. Claude Code é separado e exige conta própria.</p><button id="deps">Instalar dependências</button></section>
+<section><h2>1. Verificação</h2><div class="grid" id="checks">Verificando...</div><p class="muted" id="guidance" aria-live="polite"></p><button class="secondary" id="refresh">Verificar novamente</button></section>
+<section><h2>2. Instalar o que falta</h2><p class="muted">Instala Node.js, Python e FFmpeg com winget (Windows) ou Homebrew (Mac). Pode exigir confirmações e internet. O Claude Code não é instalado por este botão: precisa ser instalado e autenticado separadamente.</p><button id="deps">Instalar dependências</button></section>
 <section><h2>3. Preparar o MotionLab</h2><p class="muted">O kit será copiado para Documentos/MotionLab Kit; seus vídeos anteriores nunca são apagados.</p><button id="setup">Preparar kit</button><button class="secondary" id="demo">Gerar vídeo de teste</button><button class="secondary" id="folder">Abrir pasta</button></section>
 <p id="result" aria-live="polite"></p><pre id="log" aria-live="polite">Aguardando...</pre>
 <p class="muted">Para criar vídeos por conversa, instale o Claude Code pelo site oficial e faça login. Gemini TTS é opcional.</p>
@@ -26,9 +26,19 @@
     for(const [key,label] of [['system','Sistema'],['node','Node.js'],['npm','npm'],['python','Python'],['ffmpeg','FFmpeg'],['claude','Claude Code'],['manager','Gerenciador']]){
       const d=document.createElement('div');d.className='item';d.textContent=label+': '+(key==='system'?s[key]:s[key]?'✓ Encontrado':'✕ Pendente');$('checks').append(d);
     }
+    const missing=[['node','Node.js'],['npm','npm'],['python','Python'],['ffmpeg','FFmpeg']].filter(([key])=>!s[key]).map(([,label])=>label);
+    $('guidance').textContent=missing.length
+      ? 'Faltando para preparar o kit: '+missing.join(', ')+'. Clique em “Instalar dependências” e verifique novamente. Se já instalou, feche e abra o MotionLab. Se continuar pendente, o programa pode estar fora do caminho de busca do sistema.'
+      : '✓ Dependências essenciais encontradas. Você pode clicar em “Preparar kit”.';
+    if(!s.claude) $('guidance').textContent+=' Claude Code: instale separadamente pelo site oficial e faça login para criar vídeos por conversa.';
+    $('deps').disabled=!missing.length;
   }
   async function action(method){ for(const b of document.querySelectorAll('button')) b.disabled=true;$('result').textContent='Aguarde...';$('result').className='';
-    try { const out=await window.motionlab[method](); $('result').textContent=out?.error?'Atenção: '+out.error:'Concluído!';$('result').className=out?.error?'bad':'good'; }
+    try { const out=await window.motionlab[method]();
+      $('result').textContent=out?.error?'Atenção: '+out.error:method==='installDependencies'
+        ? out?.missing?.length?'Instalação executada, mas ainda não foram reconhecidos: '+out.missing.join(', ')+'. Feche e abra o MotionLab e verifique novamente.':'Dependências instaladas e reconhecidas. Agora clique em “Preparar kit”.'
+        : method==='setup'?'Kit preparado. Agora você pode gerar um vídeo de teste.':method==='demo'?'Vídeo de teste finalizado. Abra a pasta para conferir.':'Operação concluída.';
+      $('result').className=out?.error||out?.missing?.length?'bad':'good'; }
     catch(e){$('result').textContent=e.message;$('result').className='bad';}
     finally{for(const b of document.querySelectorAll('button')) b.disabled=false;await refresh();}
   }

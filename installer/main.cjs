@@ -110,14 +110,22 @@ function geminiConfigured() {
   const match = fs.readFileSync(file, 'utf8').match(/^GEMINI_API_KEY=(.*)$/m);
   return Boolean(match && match[1].trim());
 }
+function normalizeGeminiKey(value) {
+  if (typeof value !== 'string') throw new Error('Informe uma chave de API válida.');
+  // O AI Studio pode ser copiado como valor puro ou como GEMINI_API_KEY="...".
+  let key = value.replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
+  const assignment = key.match(/^(?:export\s+)?(?:GEMINI_API_KEY|GOOGLE_API_KEY)\s*=\s*(.+)$/i);
+  if (assignment) key = assignment[1].trim();
+  if (/^["'`]/.test(key) && key[0] === key[key.length - 1]) key = key.slice(1, -1).trim();
+  if (key.length < 20 || key.length > 512 || !/^[A-Za-z0-9_.-]+$/.test(key))
+    throw new Error('Formato não reconhecido. No Google AI Studio, copie apenas o valor da chave (geralmente começa com AIza), sem texto adicional.');
+  return key;
+}
 function saveGeminiKey(value) {
-  if (typeof value !== 'string') throw new Error('A chave precisa ser informada.');
-  const key = value.trim();
-  if (key.length < 20 || key.length > 512 || !/^[A-Za-z0-9_-]+$/.test(key))
-    throw new Error('Chave inválida: confira se copiou o valor completo, sem espaços.');
+  const key = normalizeGeminiKey(value);
   const target = dest();
   if (!fs.existsSync(path.join(target, 'package.json')))
-    throw new Error('Prepare o kit na etapa 3 antes de salvar a chave.');
+    throw new Error('Prepare os arquivos do MotionLab na etapa 3 antes de salvar a chave.');
   const envFile = geminiEnvPath();
   let content = fs.existsSync(envFile) ? fs.readFileSync(envFile, 'utf8') : '';
   if (!content && fs.existsSync(path.join(target, '.env.example')))
@@ -126,7 +134,6 @@ function saveGeminiKey(value) {
   content = /^GEMINI_API_KEY=.*$/m.test(content)
     ? content.replace(/^GEMINI_API_KEY=.*$/m, line)
     : content.replace(/\s*$/, '\n') + line + '\n';
-  // Grava apenas no computador do usuário, preservando as demais configurações.
   fs.writeFileSync(envFile, content, { mode: 0o600 });
   if (!windows) fs.chmodSync(envFile, 0o600);
   return { ok: true, configured: true };

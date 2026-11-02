@@ -1,48 +1,127 @@
 <!doctype html>
-<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MotionLab Kit — Instalação</title>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MotionLab Kit — Primeiros passos</title>
 <style>
-  :root{color-scheme:dark;font-family:system-ui,Arial,sans-serif}*{box-sizing:border-box}
-  body{margin:0;background:#0b1021;color:#e9f1ff;padding:30px;line-height:1.5}
-  main{max-width:750px;margin:auto}h1{font-size:31px;margin:4px 0}h2{font-size:18px}
-  .muted{color:#a2aec8}.pill{display:inline-block;background:#1c3451;color:#8de7e2;padding:4px 10px;border-radius:20px;font-size:12px}
-  section{padding:18px 20px;margin:18px 0;background:#151e33;border:1px solid #2d3b55;border-radius:14px}
-  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.item{padding:8px;background:#202b44;border-radius:8px}
-  button{padding:12px 16px;border:0;border-radius:9px;background:#38cfb8;color:#07221e;font-weight:700;cursor:pointer;margin:5px 6px 3px 0}
-  button.secondary{background:#293a58;color:#eaf0ff}button:disabled{opacity:.5;cursor:wait}
-  pre{height:140px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;background:#080d1b;padding:12px;border-radius:9px;font-size:12px}
-  #result{font-weight:650;min-height:22px}.good{color:#6be7aa}.bad{color:#ff9c9c}
+:root{font-family:system-ui,-apple-system,sans-serif;color-scheme:dark}*{box-sizing:border-box}
+body{margin:0;padding:25px;background:#0b1021;color:#e9f1ff;line-height:1.5}
+main{max-width:780px;margin:auto}h1{font-size:30px;line-height:1.15;margin:10px 0}h2{font-size:20px;margin:0 0 9px}
+p{margin:8px 0}.muted{color:#adb9d3}.pill{display:inline-block;border-radius:30px;padding:5px 12px;background:#1d3451;color:#93e9e3;font-size:12px}
+section{padding:22px;margin:17px 0;border-radius:15px;background:#151e33;border:1px solid #344561}
+.step{display:none}.step.current{display:block}.step-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.badge{border-radius:20px;background:#203250;color:#a6d4e4;padding:5px 10px;font-size:12px;white-space:nowrap}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin:12px 0}.item{background:#202b44;padding:9px;border-radius:8px}
+button{background:#38cfb8;border:0;border-radius:9px;color:#07221e;padding:11px 14px;font-weight:700;cursor:pointer;margin:7px 7px 0 0}
+button.secondary{background:#2b3b59;color:#eef4ff}button:disabled{opacity:.55;cursor:wait}
+nav{display:flex;gap:5px;margin:20px 0}.dot{height:5px;flex:1;border-radius:5px;background:#2c3d5c}.dot.active{background:#38cfb8}
+#result{min-height:24px;font-weight:600}.error{color:#ffa1a1}.success{color:#6be7aa}
+pre{max-height:220px;min-height:95px;overflow:auto;background:#080d1b;border-radius:10px;padding:13px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}
+.tip{padding:13px;border-left:3px solid #38cfb8;background:#1c2c43;border-radius:6px;margin:12px 0}
+footer{display:flex;justify-content:space-between;gap:12px;align-items:center}.hide{display:none}
 </style></head><body><main>
-<span class="pill">MotionLab Kit · Assistente de instalação</span><h1>Vamos preparar seu computador</h1>
-<p class="muted">Você acompanha tudo por aqui. Os programas externos são instalados somente com sua autorização.</p>
-<section><h2>1. Verificação</h2><div class="grid" id="checks">Verificando...</div><p class="muted" id="guidance" aria-live="polite"></p><button class="secondary" id="refresh">Verificar novamente</button></section>
-<section><h2>2. Instalar o que falta</h2><p class="muted">Instala Node.js, Python e FFmpeg com winget (Windows) ou Homebrew (Mac). Pode exigir confirmações e internet. O Claude Code não é instalado por este botão: precisa ser instalado e autenticado separadamente.</p><button id="deps">Instalar dependências</button></section>
-<section><h2>3. Preparar o MotionLab</h2><p class="muted">O kit será copiado para Documentos/MotionLab Kit; seus vídeos anteriores nunca são apagados.</p><button id="setup">Preparar kit</button><button class="secondary" id="demo">Gerar vídeo de teste</button><button class="secondary" id="folder">Abrir pasta</button></section>
-<p id="result" aria-live="polite"></p><pre id="log" aria-live="polite">Aguardando...</pre>
-<p class="muted">Para criar vídeos por conversa, instale o Claude Code pelo site oficial e faça login. Gemini TTS é opcional.</p>
-</main><script>
-  const $=id=>document.getElementById(id);
-  async function refresh(){ const s=await window.motionlab.status(); $('checks').replaceChildren();
-    for(const [key,label] of [['system','Sistema'],['node','Node.js'],['npm','npm'],['python','Python'],['ffmpeg','FFmpeg'],['claude','Claude Code'],['manager','Gerenciador']]){
-      const d=document.createElement('div');d.className='item';d.textContent=label+': '+(key==='system'?s[key]:s[key]?'✓ Encontrado':'✕ Pendente');$('checks').append(d);
-    }
-    const missing=[['node','Node.js'],['npm','npm'],['python','Python'],['ffmpeg','FFmpeg']].filter(([key])=>!s[key]).map(([,label])=>label);
-    $('guidance').textContent=missing.length
-      ? 'Faltando para preparar o kit: '+missing.join(', ')+'. Clique em “Instalar dependências” e verifique novamente. Se já instalou, feche e abra o MotionLab. Se continuar pendente, o programa pode estar fora do caminho de busca do sistema.'
-      : '✓ Dependências essenciais encontradas. Você pode clicar em “Preparar kit”.';
-    if(!s.claude) $('guidance').textContent+=' Claude Code: instale separadamente pelo site oficial e faça login para criar vídeos por conversa.';
-    $('deps').disabled=!missing.length;
+<span class="pill">MotionLab Kit · Configuração guiada</span>
+<h1>Seu estúdio de vídeos, passo a passo.</h1>
+<p class="muted">Vamos preparar o computador e abrir o MotionLab no VS Code. Você acompanha todas as etapas.</p>
+<nav aria-label="Progresso da configuração"><i class="dot active"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i></nav>
+<section class="step current" data-step="0">
+<div class="step-head"><h2>1. Verificar seu computador</h2><span class="badge">Diagnóstico</span></div>
+<p class="muted">Os programas já encontrados serão preservados. Não instalaremos versões duplicadas.</p>
+<div class="grid" id="checks">Verificando...</div><p id="guidance" class="muted"></p>
+<button class="secondary" id="refresh">Verificar novamente</button>
+</section>
+<section class="step" data-step="1">
+<div class="step-head"><h2>2. Instalar o que falta</h2><span class="badge">Sua autorização</span></div>
+<p class="muted">O MotionLab usa Homebrew (Mac) ou winget (Windows) para instalar Node.js, Python, FFmpeg e VS Code. Podem surgir pedidos de confirmação do sistema.</p>
+<div class="tip" id="missing">Verificando programas...</div>
+<button id="deps">Instalar Node.js, Python e FFmpeg</button>
+<button id="editor">Instalar VS Code</button>
+<p class="muted">O Claude Code será configurado em uma etapa separada e requer uma conta própria.</p>
+</section>
+<section class="step" data-step="2">
+<div class="step-head"><h2>3. Preparar os arquivos do MotionLab</h2><span class="badge">Projeto</span></div>
+<p class="muted">O kit será copiado para Documentos/MotionLab Kit. Arquivos e vídeos existentes não serão apagados.</p>
+<button id="setup">Preparar o kit</button><button id="check" class="secondary">Verificar instalação</button>
+<p class="muted">A verificação analisa o ambiente sem iniciar uma renderização completa. O preparo inicial pode levar alguns minutos.</p>
+</section>
+<section class="step" data-step="3">
+<div class="step-head"><h2>4. Abrir VS Code e configurar Claude</h2><span class="badge">Criação por conversa</span></div>
+<p>Abra o projeto no VS Code. No terminal integrado, execute <code>claude</code> e entre na sua conta, caso solicitado.</p>
+<div class="tip">O MotionLab abre o VS Code com a pasta correta. Por segurança e compatibilidade, você inicia o terminal com <strong>Terminal → Novo Terminal</strong> e digita <code>claude</code>.</div>
+<p class="muted">Se o Claude Code não estiver instalado, consulte <a href="#" id="claude-link">o guia oficial</a>. Depois, clique em “Verificar novamente” na etapa 1.</p>
+<button id="open-vscode">Abrir projeto no VS Code</button>
+</section>
+<section class="step" data-step="4">
+<div class="step-head"><h2>5. Crie seu primeiro vídeo</h2><span class="badge">Pronto!</span></div>
+<p>Uma janela flutuante acompanha você enquanto trabalha no VS Code, com sugestões e instruções até exportar um MP4.</p>
+<div class="tip">Exemplo para o Claude: “Crie um vídeo animado vertical de 30 segundos apresentando minha empresa, com cores azul e branco.”</div>
+<button id="guide">Mostrar tutorial flutuante</button><button id="folder" class="secondary">Abrir pasta do MotionLab</button>
+</section>
+<p id="result" role="status" aria-live="polite"></p>
+<details><summary>Ver detalhes técnicos</summary><pre id="log">Aguardando uma operação...</pre></details>
+<footer><button id="back" class="secondary">Voltar</button><button id="next">Próxima etapa</button></footer>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+let current=0,lastStatus=null,running=false;
+const steps=[...document.querySelectorAll('.step')];
+const essential=['node','npm','python','ffmpeg'];
+const names={node:'Node.js',npm:'npm',python:'Python',ffmpeg:'FFmpeg',vscode:'VS Code',claude:'Claude Code'};
+function show(index){
+ current=Math.max(0,Math.min(4,index));
+ steps.forEach((el,i)=>el.classList.toggle('current',i===current));
+ document.querySelectorAll('.dot').forEach((el,i)=>el.classList.toggle('active',i<=current));
+ $('back').disabled=running||current===0;
+ $('next').textContent=current===4?'Concluir':'Próxima etapa';
+ $('next').disabled=running;
+ if(current===1) missing();
+}
+function missing(){
+ if(!lastStatus)return;
+ const pending=[...essential,'vscode'].filter(k=>!lastStatus[k]).map(k=>names[k]);
+ $('missing').textContent=pending.length?'Faltando: '+pending.join(', '):'Tudo instalado! Você já pode seguir.';
+ $('deps').disabled=running||essential.every(k=>lastStatus[k]);
+ $('editor').disabled=running||lastStatus.vscode;
+}
+async function refresh(){
+ try{
+  const s=await window.motionlab.status();lastStatus=s;
+  $('checks').replaceChildren();
+  for(const [key,label] of [['system','Sistema'],...Object.entries(names),['manager','Gerenciador']]){
+    const el=document.createElement('div');el.className='item';
+    el.textContent=label+': '+(key==='system'?s[key]:(s[key]?'✓ Encontrado':'✕ Pendente'));
+    $('checks').append(el);
   }
-  async function action(method){ for(const b of document.querySelectorAll('button')) b.disabled=true;$('result').textContent='Aguarde...';$('result').className='';
-    try { const out=await window.motionlab[method]();
-      $('result').textContent=out?.error?'Atenção: '+out.error:method==='installDependencies'
-        ? out?.missing?.length?'Instalação executada, mas ainda não foram reconhecidos: '+out.missing.join(', ')+'. Feche e abra o MotionLab e verifique novamente.':'Dependências instaladas e reconhecidas. Agora clique em “Preparar kit”.'
-        : method==='setup'?'Kit preparado. Agora você pode gerar um vídeo de teste.':method==='demo'?'Vídeo de teste finalizado. Abra a pasta para conferir.':'Operação concluída.';
-      $('result').className=out?.error||out?.missing?.length?'bad':'good'; }
-    catch(e){$('result').textContent=e.message;$('result').className='bad';}
-    finally{for(const b of document.querySelectorAll('button')) b.disabled=false;await refresh();}
-  }
-  window.motionlab.onLog(line=>{const p=$('log');p.textContent+=line;p.scrollTop=p.scrollHeight;});
-  $('refresh').onclick=refresh;$('deps').onclick=()=>action('installDependencies');$('setup').onclick=()=>action('setup');
-  $('demo').onclick=()=>action('demo');$('folder').onclick=()=>window.motionlab.openFolder();refresh();
+  const essentialMissing=essential.filter(k=>!s[k]).map(k=>names[k]);
+  $('guidance').textContent=essentialMissing.length?'Faltando para preparar o kit: '+essentialMissing.join(', ')+'.':'Dependências essenciais encontradas.';
+  if(!s.vscode)$('guidance').textContent+=' Instale o VS Code na etapa 2.';
+  if(!s.claude)$('guidance').textContent+=' Claude Code ainda não foi detectado; ele pode ser instalado separadamente.';
+  $('guidance').textContent+=s.prepared?' Kit já preparado.':'';
+  missing();
+ }catch(e){message('Erro na verificação: '+e.message,true);}
+}
+function message(msg,error=false){$('result').textContent=msg;$('result').className=error?'error':'success';}
+async function action(method,success){
+ if(running)return;running=true;
+ document.querySelectorAll('button').forEach(b=>b.disabled=true);
+ message('Executando '+(success||'operação')+'. Pode levar alguns minutos...',false);
+ $('log').textContent='Iniciando...\n';document.querySelector('details').open=true;
+ try {
+   const out=await window.motionlab[method]();
+   if(out?.error)throw Error(out.error);
+   message(method==='installDependencies'&&out?.missing?.length?'Instalação terminou, mas alguns itens não foram reconhecidos: '+out.missing.join(', ')+'. Confira os detalhes e tente novamente.':success||'Concluído!');
+ }catch(e){message('Atenção: '+e.message,true);}
+ finally{running=false;document.querySelectorAll('button').forEach(b=>b.disabled=false);await refresh();show(current);}
+}
+$('back').onclick=()=>show(current-1);
+$('next').onclick=()=>current===4?message('Tudo pronto! O tutorial pode ser reaberto nesta tela.'):show(current+1);
+$('refresh').onclick=async()=>{await refresh();message('Verificação atualizada. Veja os itens acima.');};
+$('deps').onclick=()=>action('installDependencies','Dependências essenciais verificadas.');
+$('editor').onclick=()=>action('installVSCode','Instalação do VS Code finalizada.');
+$('setup').onclick=()=>action('setup','Preparo do kit finalizado.');
+$('check').onclick=()=>action('quickCheck','Diagnóstico concluído. Consulte os detalhes técnicos.');
+$('open-vscode').onclick=()=>action('openVSCode','Projeto aberto no VS Code. Siga o tutorial flutuante para iniciar o Claude.');
+$('guide').onclick=()=>action('openGuide','Tutorial flutuante aberto.');
+$('folder').onclick=()=>window.motionlab.openFolder();
+$('claude-link').onclick=event=>{event.preventDefault();window.motionlab.openClaudeDocs();};
+window.motionlab.onLog(line=>{const l=$('log');l.textContent+=line;l.scrollTop=l.scrollHeight;});
+show(0);refresh();
 </script></body></html>

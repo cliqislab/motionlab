@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="260" viewBox="0 0 1200 260" font-family="Helvetica, Arial, sans-serif">
+  <rect width="1200" height="260" fill="#0f0f12"/>
+  <defs>
+    <marker id="seta" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#7C5CFF"/>
+    </marker>
+  </defs>
+  <g font-size="17" fill="#F4F4F1" text-anchor="middle">
+    <rect x="20" y="70" width="170" height="110" rx="16" fill="#1b1b1e" stroke="#2a2a2f" stroke-width="2"/>
+    <text x="105" y="112" font-weight="700">1. Instalar</text>
+    <text x="105" y="140" fill="#9a9aa3" font-size="15">npm run setup</text>
+    <text x="105" y="162" fill="#9a9aa3" font-size="13">uma vez só</text>
+
+    <rect x="216" y="70" width="170" height="110" rx="16" fill="#1b1b1e" stroke="#2a2a2f" stroke-width="2"/>
+    <text x="301" y="112" font-weight="700">2. Abrir o Claude</text>
+    <text x="301" y="140" fill="#9a9aa3" font-size="15">claude</text>
+    <text x="301" y="162" fill="#9a9aa3" font-size="13">na pasta do kit</text>
+
+    <rect x="412" y="70" width="170" height="110" rx="16" fill="#1b1b1e" stroke="#7C5CFF" stroke-width="2"/>
+    <text x="497" y="112" font-weight="700">3. Pedir o vídeo</text>
+    <text x="497" y="140" fill="#9a9aa3" font-size="15">em português</text>
+    <text x="497" y="162" fill="#9a9aa3" font-size="13">tema, rede, cor, final</text>
+
+    <rect x="608" y="70" width="170" height="110" rx="16" fill="#1b1b1e" stroke="#2a2a2f" stroke-width="2"/>
+    <text x="693" y="112" font-weight="700">4. Ver a prévia</text>
+    <text x="693" y="140" fill="#9a9aa3" font-size="15">npm run preview</text>
+    <text x="693" y="162" fill="#9a9aa3" font-size="13">no navegador</text>
+
+    <rect x="804" y="70" width="170" height="110" rx="16" fill="#1b1b1e" stroke="#2a2a2f" stroke-width="2"/>
+    <text x="889" y="112" font-weight="700">5. Ajustar</text>
+    <text x="889" y="140" fill="#9a9aa3" font-size="15">"troque a cor..."</text>
+    <text x="889" y="162" fill="#9a9aa3" font-size="13">quantas vezes quiser</text>
+
+    <rect x="1000" y="70" width="180" height="110" rx="16" fill="#7C5CFF"/>
+    <text x="1090" y="112" font-weight="700" fill="#0b0b0c">6. Exportar MP4</text>
+    <text x="1090" y="140" fill="#0b0b0c" font-size="15">npm run render</text>
+    <text x="1090" y="162" fill="#0b0b0c" font-size="13">pronto para postar</text>
+  </g>
+  <g stroke="#7C5CFF" stroke-width="3" marker-end="url(#seta)">
+    <line x1="192" y1="125" x2="212" y2="125"/>
+    <line x1="388" y1="125" x2="408" y2="125"/>
+    <line x1="584" y1="125" x2="604" y2="125"/>
+    <line x1="780" y1="125" x2="800" y2="125"/>
+    <line x1="976" y1="125" x2="996" y2="125"/>
+  </g>
+  <path d="M889,182 C889,230 693,230 693,186" fill="none" stroke="#7C5CFF" stroke-width="2" stroke-dasharray="6 6" marker-end="url(#seta)"/>
+  <text x="791" y="246" fill="#9a9aa3" font-size="13" text-anchor="middle">repete até ficar do seu jeito</text>
+  <text x="600" y="40" fill="#F4F4F1" font-size="22" font-weight="700" text-anchor="middle">Do pedido ao MP4</text>
+</svg>

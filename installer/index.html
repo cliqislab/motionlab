@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MotionLab Kit — Instalação</title>
+<style>
+  :root{color-scheme:dark;font-family:system-ui,Arial,sans-serif}*{box-sizing:border-box}
+  body{margin:0;background:#0b1021;color:#e9f1ff;padding:30px;line-height:1.5}
+  main{max-width:750px;margin:auto}h1{font-size:31px;margin:4px 0}h2{font-size:18px}
+  .muted{color:#a2aec8}.pill{display:inline-block;background:#1c3451;color:#8de7e2;padding:4px 10px;border-radius:20px;font-size:12px}
+  section{padding:18px 20px;margin:18px 0;background:#151e33;border:1px solid #2d3b55;border-radius:14px}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.item{padding:8px;background:#202b44;border-radius:8px}
+  button{padding:12px 16px;border:0;border-radius:9px;background:#38cfb8;color:#07221e;font-weight:700;cursor:pointer;margin:5px 6px 3px 0}
+  button.secondary{background:#293a58;color:#eaf0ff}button:disabled{opacity:.5;cursor:wait}
+  pre{height:140px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;background:#080d1b;padding:12px;border-radius:9px;font-size:12px}
+  #result{font-weight:650;min-height:22px}.good{color:#6be7aa}.bad{color:#ff9c9c}
+</style></head><body><main>
+<span class="pill">MotionLab Kit · Assistente de instalação</span><h1>Vamos preparar seu computador</h1>
+<p class="muted">Você acompanha tudo por aqui. Os programas externos são instalados somente com sua autorização.</p>
+<section><h2>1. Verificação</h2><div class="grid" id="checks">Verificando...</div><button class="secondary" id="refresh">Verificar novamente</button></section>
+<section><h2>2. Instalar o que falta</h2><p class="muted">Usa winget (Windows) ou Homebrew (Mac). Pode exigir confirmações e acesso à internet. Claude Code é separado e exige conta própria.</p><button id="deps">Instalar dependências</button></section>
+<section><h2>3. Preparar o MotionLab</h2><p class="muted">O kit será copiado para Documentos/MotionLab Kit; seus vídeos anteriores nunca são apagados.</p><button id="setup">Preparar kit</button><button class="secondary" id="demo">Gerar vídeo de teste</button><button class="secondary" id="folder">Abrir pasta</button></section>
+<p id="result" aria-live="polite"></p><pre id="log" aria-live="polite">Aguardando...</pre>
+<p class="muted">Para criar vídeos por conversa, instale o Claude Code pelo site oficial e faça login. Gemini TTS é opcional.</p>
+</main><script>
+  const $=id=>document.getElementById(id);
+  async function refresh(){ const s=await window.motionlab.status(); $('checks').replaceChildren();
+    for(const [key,label] of [['system','Sistema'],['node','Node.js'],['npm','npm'],['python','Python'],['ffmpeg','FFmpeg'],['claude','Claude Code'],['manager','Gerenciador']]){
+      const d=document.createElement('div');d.className='item';d.textContent=label+': '+(key==='system'?s[key]:s[key]?'✓ Encontrado':'✕ Pendente');$('checks').append(d);
+    }
+  }
+  async function action(method){ for(const b of document.querySelectorAll('button')) b.disabled=true;$('result').textContent='Aguarde...';$('result').className='';
+    try { const out=await window.motionlab[method](); $('result').textContent=out?.error?'Atenção: '+out.error:'Concluído!';$('result').className=out?.error?'bad':'good'; }
+    catch(e){$('result').textContent=e.message;$('result').className='bad';}
+    finally{for(const b of document.querySelectorAll('button')) b.disabled=false;await refresh();}
+  }
+  window.motionlab.onLog(line=>{const p=$('log');p.textContent+=line;p.scrollTop=p.scrollHeight;});
+  $('refresh').onclick=refresh;$('deps').onclick=()=>action('installDependencies');$('setup').onclick=()=>action('setup');
+  $('demo').onclick=()=>action('demo');$('folder').onclick=()=>window.motionlab.openFolder();refresh();
+</script></body></html>

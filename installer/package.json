@@ -1,0 +1,24 @@
+{
+  "name": "motionlab-installer",
+  "version": "1.1.0",
+  "private": true,
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "prepare-kit": "node prepare-kit.mjs",
+    "dist:win": "npm run prepare-kit && electron-builder --win nsis --x64",
+    "dist:mac": "npm run prepare-kit && electron-builder --mac dmg --universal"
+  },
+  "devDependencies": { "electron": "33.4.11", "electron-builder": "25.1.8" },
+  "build": {
+    "appId": "br.com.motionlab.instalador",
+    "productName": "MotionLab Kit",
+    "directories": { "output": "../dist/instaladores" },
+    "files": [ "main.cjs", "preload.cjs", "index.html", "package.json" ],
+    "extraResources": [ { "from": "stage/kit", "to": "kit" } ],
+    "asar": true,
+    "win": { "target": [ "nsis" ] },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "artifactName": "MotionLab-Setup-Windows-${version}.${ext}" },
+    "mac": { "target": [ "dmg" ], "category": "public.app-category.video", "artifactName": "MotionLab-Setup-macOS-${version}.${ext}" }
+  }
+}

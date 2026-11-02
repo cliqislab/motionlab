@@ -1,0 +1,43 @@
+{
+  "id": "neon",
+  "nome": "Neon Tech",
+  "status": "pronto",
+  "versao": "1.0.0",
+  "descricao": "Tipografia cinética em fundo escuro, cor de destaque com brilho, câmera 3D, glitch nas palavras de impacto, trilha eletrônica e efeitos sonoros gerados por código.",
+  "ideal_para": ["lançamento de app ou produto", "anúncio curto", "explicação de serviço", "Reels/Shorts/TikTok", "vídeo para YouTube"],
+  "resolucoes": {
+    "16:9": [1920, 1080],
+    "9:16": [1080, 1920],
+    "1:1": [1080, 1080],
+    "4:5": [1080, 1350]
+  },
+  "fps": 30,
+  "duracao": { "padrao": 30, "minima": 6, "maxima": 120, "observacao": "A duração é a soma das cenas. Cada tipo de cena tem uma duração padrão que pode ser trocada com \"duracao\"." },
+  "parametros": [
+    { "campo": "formato", "tipo": "texto", "valores": ["16:9", "9:16", "1:1", "4:5"], "padrao": "16:9", "descricao": "Proporção do vídeo" },
+    { "campo": "cores.destaque", "tipo": "cor #RRGGBB", "padrao": "#FF5A1F", "descricao": "Cor das palavras entre *asteriscos*, botões e brilhos" },
+    { "campo": "cores.fundo", "tipo": "cor #RRGGBB", "padrao": "#09090A", "descricao": "Cor de fundo" },
+    { "campo": "cores.texto", "tipo": "cor #RRGGBB", "padrao": "#F4F4F1", "descricao": "Cor dos textos" },
+    { "campo": "musica.ativa", "tipo": "sim/não", "padrao": true, "descricao": "Trilha eletrônica gerada por código" },
+    { "campo": "musica.bpm", "tipo": "número", "padrao": 124, "descricao": "Velocidade da trilha" },
+    { "campo": "efeitosSonoros", "tipo": "sim/não", "padrao": true, "descricao": "Whoosh, blip, digitação, impacto" },
+    { "campo": "efeitos.grao", "tipo": "sim/não", "padrao": true, "descricao": "Textura de filme" },
+    { "campo": "efeitos.grade", "tipo": "sim/não", "padrao": true, "descricao": "Grade de fundo" },
+    { "campo": "efeitos.hud", "tipo": "sim/não", "padrao": false, "descricao": "Cantos e timecode estilo interface" },
+    { "campo": "narracao.ativa", "tipo": "sim/não", "padrao": false, "descricao": "Liga a narração (audio/narr.wav, criada com npm run narrar)" },
+    { "campo": "cenas", "tipo": "lista", "descricao": "Sequência de cenas. Tipos: titulo, chips, app, grafico, numero, codigo, comparacao, imagem, cta, custom. Campos de cada tipo em PERSONALIZACAO.md" }
+  ],
+  "tipos_de_cena": {
+    "titulo": "1 a 4 linhas de texto animado (modos: up, type, expand, pop, slam)",
+    "chips": "etiquetas que entram em sequência; as marcadas em \"riscar\" levam um risco vermelho",
+    "app": "celular com a tela de um aplicativo: valor que conta, lista de itens e mini gráfico",
+    "grafico": "gráfico de barras que cresce, com uma barra em destaque",
+    "numero": "número grande que conta até o valor final",
+    "codigo": "janela de código sendo digitado",
+    "comparacao": "dois painéis: antes (riscado) x depois (com check)",
+    "imagem": "sua imagem (public/imagens/) com zoom suave e legenda",
+    "cta": "chamada final com botão",
+    "custom": "componente criado pelo Claude em src/custom.tsx"
+  },
+  "exemplo": "npm run novo -- meu-video --template neon --formato 9:16"
+}

@@ -1,0 +1,83 @@
+{
+  "titulo": "Nexa App — vídeo de demonstração",
+  "template": "neon",
+  "formato": "9:16",
+  "cores": { "destaque": "#7C5CFF" },
+  "narracao": { "ativa": false },
+  "musica": { "ativa": true, "bpm": 124 },
+  "efeitos": { "hud": false, "grao": true, "grade": true },
+  "cenas": [
+    {
+      "tipo": "titulo",
+      "duracao": 3.2,
+      "linhas": [
+        { "texto": "Sua semana parece assim?", "modo": "type", "tamanho": "p", "cor": "cinza" },
+        { "texto": "*47* tarefas", "modo": "pop" },
+        { "texto": "e nenhuma pronta", "tamanho": "m" }
+      ]
+    },
+    {
+      "tipo": "chips",
+      "duracao": 3.6,
+      "titulo": "Chega de",
+      "itens": ["Post-its", "5 apps", "Planilha"],
+      "riscar": [0, 1, 2]
+    },
+    {
+      "tipo": "titulo",
+      "impacto": true,
+      "duracao": 2.6,
+      "linhas": [
+        { "texto": "*NEXA*" },
+        { "texto": "organiza por você", "tamanho": "m" }
+      ]
+    },
+    {
+      "tipo": "app",
+      "duracao": 5.6,
+      "nome": "Nexa",
+      "titulo": "Seu dia em *1 tela*",
+      "valor": { "rotulo": "Concluídas hoje", "numero": 12, "sufixo": "/14" },
+      "itens": [
+        { "texto": "Enviar proposta", "detalhe": "09:00 · Trabalho", "feito": true },
+        { "texto": "Revisar orçamento", "detalhe": "11:30 · Finanças", "feito": true },
+        { "texto": "Treino", "detalhe": "18:00 · Saúde", "feito": false }
+      ],
+      "grafico": [4, 6, 5, 8, 7, 9, 12]
+    },
+    {
+      "tipo": "grafico",
+      "duracao": 4.4,
+      "titulo": "Tarefas *concluídas*",
+      "barras": [
+        { "rotulo": "SEM 1", "valor": 18 },
+        { "rotulo": "SEM 2", "valor": 26 },
+        { "rotulo": "SEM 3", "valor": 31 },
+        { "rotulo": "SEM 4", "valor": 44 }
+      ]
+    },
+    {
+      "tipo": "numero",
+      "duracao": 3.4,
+      "de": 0,
+      "ate": 3,
+      "sufixo": "h",
+      "prefixo": "+",
+      "legenda": "livres por semana (ilustrativo)"
+    },
+    {
+      "tipo": "comparacao",
+      "duracao": 5,
+      "titulo": "Antes x *Nexa*",
+      "antes": ["Lembrar de tudo", "Planilha manual"],
+      "depois": ["Lembretes com IA", "Prioridades automáticas"]
+    },
+    {
+      "tipo": "cta",
+      "duracao": 4,
+      "texto": "Teste a *NEXA*",
+      "subtexto": "App fictício · dados ilustrativos",
+      "botao": "Baixar grátis"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "titulo": "Meu primeiro vídeo",
+  "template": "neon",
+  "formato": "16:9",
+  "cores": { "destaque": "#FF5A1F" },
+  "narracao": { "ativa": false },
+  "musica": { "ativa": true, "bpm": 124 },
+  "efeitos": { "hud": false, "grao": true, "grade": true },
+  "cenas": [
+    {
+      "tipo": "titulo",
+      "linhas": [
+        { "texto": "E se eu te dissesse...", "modo": "type", "tamanho": "p", "cor": "cinza" },
+        { "texto": "que dá pra fazer *MOTION*", "modo": "expand" },
+        { "texto": "sem editor de vídeo?", "tamanho": "m" }
+      ]
+    },
+    {
+      "tipo": "chips",
+      "titulo": "Esqueça",
+      "itens": ["Timeline", "Keyframes", "Horas de render"],
+      "riscar": [0, 1, 2]
+    },
+    {
+      "tipo": "titulo",
+      "impacto": true,
+      "linhas": [
+        { "texto": "*SÓ TEXTO*" },
+        { "texto": "e o Claude anima", "tamanho": "m" }
+      ]
+    },
+    {
+      "tipo": "cta",
+      "texto": "*SEU VÍDEO* AQUI",
+      "subtexto": "Troque os textos no conteudo.json",
+      "botao": "Começar"
+    }
+  ]
+}

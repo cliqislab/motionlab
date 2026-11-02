@@ -1,0 +1,20 @@
+# Dependências e ambientes locais
+node_modules/
+installer/stage/
+.venv/
+
+# Chaves e configurações pessoais (NUNCA versionar)
+.env
+.env.*
+!.env.example
+
+# Seus vídeos (cada comprador cria os próprios)
+videos/*
+!videos/LEIA-ME.md
+
+# Saídas e temporários
+dist/
+out/
+*.log
+.DS_Store
+__pycache__/

@@ -1,0 +1,3 @@
+# Narração e sincronia (opcional, mas recomendado)
+edge-tts>=7,<8
+faster-whisper>=1.1,<2

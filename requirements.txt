@@ -1,0 +1,3 @@
+# Essencial: trilha sonora e efeitos sintetizados, imagens de revisão
+numpy>=1.26,<3
+pillow>=10,<13

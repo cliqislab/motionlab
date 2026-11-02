@@ -2,6 +2,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('motionlab', {
   status: () => ipcRenderer.invoke('status'),
   installDependencies: () => ipcRenderer.invoke('install-dependencies'),
+  installBlender: () => ipcRenderer.invoke('install-blender'),
+  onProgress: fn => ipcRenderer.on('install-progress', (_, state) => fn(state)),
   setup: () => ipcRenderer.invoke('setup-kit'),
   demo: () => ipcRenderer.invoke('test-demo'),
   openFolder: () => ipcRenderer.invoke('open-folder'),
